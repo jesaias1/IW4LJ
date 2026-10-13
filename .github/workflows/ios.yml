@@ -36,7 +36,7 @@ jobs:
           key: ios
 
       - name: Build
-        run: ios/scripts/build-ios.sh device
+        run: bash ios/scripts/build-ios.sh device
 
       - name: Upload
         uses: actions/upload-artifact@v4

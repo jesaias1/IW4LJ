@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use block2::RcBlock;
 use dispatch2::DispatchQueue;
 use objc2::rc::Retained;
-use objc2_foundation::{NSNotification, NSNotificationCenter};
+use objc2_foundation::{NSNotification, NSNotificationCenter, NSOperationQueue};
 use objc2_game_controller::{
     GCController, GCControllerButtonInput, GCControllerDidConnectNotification,
     GCControllerDidDisconnectNotification, GCControllerElement, GCExtendedGamepad,
@@ -95,12 +95,12 @@ fn read(pad: &GCExtendedGamepad) -> Report {
     }
 }
 
-fn attach(controller: &GCController) {
+fn attach(controller: &Retained<GCController>) {
     // SAFETY: plain getter; the profile is nil for a pad with no standard layout.
     let Some(pad) = (unsafe { controller.extendedGamepad() }) else {
         return;
     };
-    let key = controller as *const GCController as usize;
+    let key = Retained::as_ptr(controller) as usize;
     let device = {
         let Ok(mut devices) = DEVICES.lock() else {
             return;
@@ -113,6 +113,7 @@ fn attach(controller: &GCController) {
         devices.insert(key, device);
         device
     };
+    crate::rumble::register(device, controller);
     let last = Mutex::new(Report::default());
     let handler = RcBlock::new(
         move |pad: NonNull<GCExtendedGamepad>, _element: NonNull<GCControllerElement>| {
@@ -155,6 +156,7 @@ fn detach(controller: &GCController) {
         .ok()
         .and_then(|mut devices| devices.as_mut()?.remove(&key));
     if let Some(device) = device {
+        crate::rumble::unregister(device);
         touch::push(touch::BridgeEvent::PadRemoved { device });
     }
 }
@@ -186,13 +188,13 @@ pub fn start() {
                 center.addObserverForName_object_queue_usingBlock(
                     Some(GCControllerDidConnectNotification),
                     None,
-                    None,
+                    Some(&NSOperationQueue::mainQueue()),
                     &connected,
                 ),
                 center.addObserverForName_object_queue_usingBlock(
                     Some(GCControllerDidDisconnectNotification),
                     None,
-                    None,
+                    Some(&NSOperationQueue::mainQueue()),
                     &disconnected,
                 ),
             ];

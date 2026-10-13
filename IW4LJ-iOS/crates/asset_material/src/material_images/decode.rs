@@ -322,6 +322,17 @@ pub fn texture_skip_levels() -> u32 {
         if let Some(asked) = asked {
             return asked.min(3);
         }
+        // On iOS the system tells an app how much more it may use before it is
+        // ended, which is the number that matters; the device's RAM is not.
+        #[cfg(target_os = "ios")]
+        if let Some(headroom_mib) = ios_headroom_mib() {
+            return match headroom_mib {
+                mib if mib >= 6_000 => 0,
+                mib if mib >= 4_400 => 1,
+                mib if mib >= 2_800 => 2,
+                _ => 3,
+            };
+        }
         let total_mib = device_memory_mib();
         // Marketed sizes: "16 GB" reports ~15, "12 GB" ~11.3, "8 GB" ~7.2.
         // A match with full-size textures needs about 4 GB; on an 8 GB phone
@@ -338,6 +349,17 @@ pub fn texture_skip_levels() -> u32 {
             _ => 2,
         }
     })
+}
+
+/// How much memory this app may still use before iOS ends it, in MiB.
+#[cfg(target_os = "ios")]
+fn ios_headroom_mib() -> Option<u64> {
+    unsafe extern "C" {
+        fn os_proc_available_memory() -> usize;
+    }
+    // SAFETY: a plain query with no arguments (iOS 13 and later).
+    let bytes = unsafe { os_proc_available_memory() };
+    (bytes > 0).then(|| (bytes >> 20) as u64)
 }
 
 /// The device's total memory in MiB, or 0 when it cannot be read.

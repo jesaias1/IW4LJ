@@ -25,8 +25,9 @@ block2 = "0.6"
 dispatch2 = "0.3"
 objc2-foundation = "0.3"
 objc2-ui-kit = "0.3"
-objc2-game-controller = "0.3"
+objc2-game-controller = { version = "0.3", features = ["objc2-core-haptics"] }
 objc2-avf-audio = "0.3"
+objc2-core-haptics = "0.3"
 
 [lints]
 workspace = true
