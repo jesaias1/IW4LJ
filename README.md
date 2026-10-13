@@ -6,10 +6,10 @@ Phone ports of IW4L (by vladtrc) — an open-source runtime for
 Call of Duty: Modern Warfare 2 (2009), written in Rust with Bevy — for **Android**
 and **iOS**. Android and iPhone players can play together on LAN and online.
 
-| Folder | Port | Start here |
-|---|---|---|
-| [`IW4LJ-Android`](IW4LJ-Android) | Android (arm64, Android 12+) | [`docs/ANDROID.md`](IW4LJ-Android/docs/ANDROID.md), [`docs/ANDROID-DEVICE.md`](IW4LJ-Android/docs/ANDROID-DEVICE.md) |
-| [`IW4LJ-iOS`](IW4LJ-iOS) | iPhone / iPad (iOS 16+) | [`ios/README.md`](IW4LJ-iOS/ios/README.md), [`ios/docs/IOS-DEVICE.md`](IW4LJ-iOS/ios/docs/IOS-DEVICE.md) |
+| Folder | Port | Install guide | More |
+|---|---|---|---|
+| [`IW4LJ-Android`](IW4LJ-Android) | Android (arm64, Android 12+) | **[INSTALL-ANDROID.md](INSTALL-ANDROID.md)** | [`docs/ANDROID.md`](IW4LJ-Android/docs/ANDROID.md), [`docs/ANDROID-DEVICE.md`](IW4LJ-Android/docs/ANDROID-DEVICE.md) |
+| [`IW4LJ-iOS`](IW4LJ-iOS) | iPhone / iPad (iOS 16+) | **[INSTALL-IOS.md](INSTALL-IOS.md)** | [`ios/README.md`](IW4LJ-iOS/ios/README.md), [`ios/docs/IOS-DEVICE.md`](IW4LJ-iOS/ios/docs/IOS-DEVICE.md) |
 
 The two folders are separate, complete copies of the engine so that each build
 stands on its own. A change to the game, the netcode or the menus must be made in
