@@ -1,0 +1,23 @@
+# Machine-local config (games paths, etc.)
+.env
+
+# Rust
+/target/
+**/target/
+/dist/
+
+# Runtime output next to the binary / cwd.
+iw4l-artifacts
+iw4l.community.json
+iw4l.community.*.tmp
+
+# Android development signing key: a local build artifact, never shipped.
+/crates/android/*.keystore
+
+# Agent working memory. None of it is the product: the artifacts, the externals,
+# the agent clones and the RE tooling and its bases all stay on this machine.
+/context/
+
+.direnv/
+result
+result-*

@@ -1,0 +1,31 @@
+[package]
+name = "asset_material"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Authored materials, techniques, images, and cross-game remaps."
+
+[dependencies]
+d3d9_state.workspace = true
+asset_core.workspace = true
+asset_transport.workspace = true
+asset_iw4.workspace = true
+fastfile_iw4.workspace = true
+fastfile_iw5.workspace = true
+fastfile_t5.workspace = true
+dpvs_iw4.workspace = true
+lighting_iw4.workspace = true
+render_material.workspace = true
+diag.workspace = true
+bevy.workspace = true
+bcdec_rs.workspace = true
+dxbc_sm5.workspace = true
+
+# Mobile GPUs have no BC hardware decode, and RGBA is 8x larger than BC1, so on
+# Android the texels are re-compressed to ETC2 (4/8 bpp, mandatory on Vulkan
+# mobile) instead of expanded.
+[target.'cfg(target_os = "android")'.dependencies]
+ctt-etcpak = "0.6"
+
+[lints]
+workspace = true

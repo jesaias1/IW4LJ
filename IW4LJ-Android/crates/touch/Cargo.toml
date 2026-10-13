@@ -1,0 +1,19 @@
+[package]
+name = "touch"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Touch controls: an on-screen pad that feeds the runtime the keyboard and mouse it already reads."
+
+[dependencies]
+bevy.workspace = true
+console.workspace = true
+diag.workspace = true
+frame.workspace = true
+net.workspace = true
+render_anim.workspace = true
+render_gpu.workspace = true
+lan = { path = "../lan" }
+
+[lints]
+workspace = true
