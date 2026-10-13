@@ -27,6 +27,7 @@ Activision; this project is unaffiliated with them.
 ## Status
 
 - Android: playable on a Galaxy S23 (menus, matches, bots, controller, LAN).
+  **[Download the APK](https://github.com/jesaias1/IW4LJ/releases/latest)**.
 - iOS: written and type-checked, **not yet run on a device**. The IPA is built by
   the *iOS build* GitHub Actions workflow and installed with Sideloadly/AltStore.
 
