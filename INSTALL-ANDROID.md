@@ -12,13 +12,14 @@ on the PC, then copy it across.
 
 *Building it yourself instead:* see
 [`IW4LJ-Android/docs/ANDROID-HANDOFF.md`](IW4LJ-Android/docs/ANDROID-HANDOFF.md)
-§2–3 (`IW4LJ-Android\cratesndroid\package.ps1`; needs Rust with the
+§2–3 (`IW4LJ-Android/crates/android/package.ps1`; needs Rust with the
 `aarch64-linux-android` target, JDK 17, the Android SDK and NDK r28 — the paths at
 the top of the script are the author's, change them to yours).
 
 ## 2. Install it
 
-Open `IW4LJ-Android.apk` on the phone (copy it over if you downloaded it on the PC) — allow "install unknown apps" for your browser or file manager when asked. Or, with
+Open `IW4LJ-Android.apk` on the phone (copy it over if you downloaded it on the PC)
+and allow "install unknown apps" for your browser or file manager when asked. Or, with
 USB debugging on:
 
 ```
