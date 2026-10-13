@@ -6,7 +6,7 @@ folders), and the IW4LJ APK.
 
 ## 1. Get the APK
 
-Download **`IW4LJ-Android.apk`** (about 125 MB) from the latest release:
+Download **`IW4LJ.apk`** (about 125 MB) from the latest release:
 **https://github.com/jesaias1/IW4LJ/releases/latest** — on the phone's browser or
 on the PC, then copy it across.
 
@@ -18,12 +18,12 @@ the top of the script are the author's, change them to yours).
 
 ## 2. Install it
 
-Open `IW4LJ-Android.apk` on the phone (copy it over if you downloaded it on the PC)
+Open `IW4LJ.apk` on the phone (copy it over if you downloaded it on the PC)
 and allow "install unknown apps" for your browser or file manager when asked. Or, with
 USB debugging on:
 
 ```
-adb install -r IW4LJ-Android.apk
+adb install -r IW4LJ.apk
 ```
 
 **Never `adb uninstall`** and don't uninstall the app from the phone to reinstall:
