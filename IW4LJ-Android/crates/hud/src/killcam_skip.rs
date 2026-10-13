@@ -129,7 +129,9 @@ pub(crate) fn update_killcam_skip(
     mut gaps: ResMut<HudPresentationGaps>,
     mut pass: ResMut<HudTessPass>,
     mut exprs: ResMut<crate::expr_cache::MenuExprCache>,
+    mut title_drawn: ResMut<frame::KillcamTitleDrawn>,
 ) {
+    title_drawn.0 = false;
     let seated = view.as_deref().is_some_and(|v| v.in_killcam());
     if !seated {
         hide(&mut pass);
@@ -199,6 +201,13 @@ pub(crate) fn update_killcam_skip(
             fonts.insert(font.clone(), def);
         }
     }
+    title_drawn.0 = frame.list.cmds.iter().any(|cmd| match &cmd.op {
+        Draw2dOp::TextRun { text, loc_key, .. } => {
+            text.to_uppercase().contains("WINNING KILL")
+                || loc_key.to_uppercase().contains("WINNING_KILL")
+        }
+        _ => false,
+    });
     let list = Draw2dList {
         cmds: frame.list.cmds,
     };

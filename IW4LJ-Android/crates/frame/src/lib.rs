@@ -35,7 +35,7 @@ pub use session::{
     DisplayEncodedCamera, Headless, HostClassLoadouts, HostClassSlot, HudDraw, HudInputView,
     InstalledMatch, LaunchIdentity, LaunchReport, LifeEndCause, LifeEnded, LifeStartReason,
     LifeStarted, LocalLoadKey, LocalSpawnArmed, MapLoadApproved, MapLoadFailed, MatchKey,
-    GameplayPointer, MatchSetup, ModMenuOpen, TrickshotLoop, ReadinessState, RuntimeRole, TeardownReason, UiCamera, UiDraw, UiOverlayInput,
+    GameplayPointer, KillcamTitleDrawn, MatchSetup, ModMenuOpen, TrickshotLoop, ReadinessState, RuntimeRole, TeardownReason, UiCamera, UiDraw, UiOverlayInput,
     UiPointerFree,
     ViewSubject, WorldGeneration, WorldProducts, WorldReadiness, WorldStamp,
 };

@@ -52,6 +52,12 @@ pub struct UiPointerFree(pub bool);
 /// (`map`, `map_restart`), which otherwise take the gametype from the
 /// environment and the rules from the config alone. It stays until cleared, so
 /// it carries across map changes; a lobby's own selection still wins.
+/// Set each frame by the HUD when the game's own final-killcam menu drew its
+/// "WINNING KILL" title, so the touch build's stand-in title and bars stay out
+/// of its way instead of doubling it.
+#[derive(Resource, Default, Debug, Clone, Copy)]
+pub struct KillcamTitleDrawn(pub bool);
+
 #[derive(Resource, Default, Debug, Clone)]
 pub struct MatchSetup {
     /// A gametype token (`sd`, `dm`, ...).

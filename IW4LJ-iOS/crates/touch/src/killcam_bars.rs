@@ -68,6 +68,7 @@ pub(crate) fn update(
     presented: Res<net::PresentedSnapshot>,
     local: Res<net::LocalPresentClient>,
     setup: Res<frame::MatchSetup>,
+    real_title: Option<Res<frame::KillcamTitleDrawn>>,
     mut bars: Query<&mut Node, (With<KillcamBar>, Without<KillcamTitle>)>,
     mut titles: Query<(&mut Node, &mut Text), (With<KillcamTitle>, Without<KillcamBar>)>,
 ) {
@@ -75,7 +76,15 @@ pub(crate) fn update(
     let final_killcam = snapshot
         .and_then(|s| s.meta.for_client(local.0))
         .and_then(|meta| meta.killcam_hud)
-        .is_some_and(|hud| hud.final_kill);
+        .is_some_and(|hud| hud.final_kill)
+        // The game's own killcam menu already drew its title and bars.
+        && !real_title.is_some_and(|drawn| drawn.0)
+        && !snapshot.is_some_and(|s| {
+            s.meta.hud_strings.iter().any(|(_, raw)| {
+                let raw = raw.to_uppercase();
+                raw.contains("WINNING_KILL") || raw.contains("WINNING KILL")
+            })
+        });
     // Round-based modes win a round; every other mode wins the game.
     let gametype = snapshot
         .and_then(|s| s.meta.script_dvars(local.0).string("g_gametype"))
