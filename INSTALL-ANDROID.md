@@ -6,26 +6,23 @@ folders), and the IW4LJ APK.
 
 ## 1. Get the APK
 
-There is no prebuilt APK in this repository yet. Build it on Windows (details in
-[`IW4LJ-Android/docs/ANDROID-HANDOFF.md`](IW4LJ-Android/docs/ANDROID-HANDOFF.md) §2–3):
+Download **`IW4LJ-Android.apk`** (about 125 MB) from the latest release:
+**https://github.com/jesaias1/IW4LJ/releases/latest** — on the phone's browser or
+on the PC, then copy it across.
 
-```powershell
-cd IW4LJ-Android\crates\android
-powershell -ExecutionPolicy Bypass -File .\package.ps1
-```
-
-It needs Rust with the `aarch64-linux-android` target, JDK 17, and the Android SDK
-(platform 34, build-tools 34.0.0) and NDK r28; the paths at the top of
-`package.ps1` are the ones used on the author's PC — change them to yours.
-The result is `iw4l.apk`.
+*Building it yourself instead:* see
+[`IW4LJ-Android/docs/ANDROID-HANDOFF.md`](IW4LJ-Android/docs/ANDROID-HANDOFF.md)
+§2–3 (`IW4LJ-Android\cratesndroid\package.ps1`; needs Rust with the
+`aarch64-linux-android` target, JDK 17, the Android SDK and NDK r28 — the paths at
+the top of the script are the author's, change them to yours).
 
 ## 2. Install it
 
-Either copy `iw4l.apk` to the phone and open it (allow "install unknown apps" for
-your file manager when asked), or with USB debugging on:
+Open `IW4LJ-Android.apk` on the phone (copy it over if you downloaded it on the PC) — allow "install unknown apps" for your browser or file manager when asked. Or, with
+USB debugging on:
 
 ```
-adb install -r iw4l.apk
+adb install -r IW4LJ-Android.apk
 ```
 
 **Never `adb uninstall`** and don't uninstall the app from the phone to reinstall:
