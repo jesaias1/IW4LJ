@@ -28,6 +28,7 @@ mod frame_cap;
 mod ios;
 mod killcam_bars;
 mod menu;
+mod safe_area;
 mod skins;
 
 use std::collections::{HashMap, HashSet};
@@ -40,6 +41,8 @@ use bevy::prelude::*;
 use bevy::ui::{Display, GlobalZIndex};
 use bevy::window::PrimaryWindow;
 
+pub use frame_cap::set_thermal_level;
+pub use safe_area::set_safe_insets;
 pub use bridge::{
     BridgeEvent, press_back, push, set_view, take_prompt, take_rumble, typed_char, typed_done,
 };
@@ -205,6 +208,9 @@ struct VirtualPad {
     /// The window size the layout was computed for; relayout happens when it
     /// changes (the surface is resized once after the activity starts).
     size: Vec2,
+    /// The safe area's left and right insets the layout was computed for, in
+    /// logical pixels.
+    insets: Vec2,
     /// One hundredth of the window height, in logical pixels.
     unit: f32,
     button_nodes: Vec<Entity>,
@@ -375,7 +381,7 @@ fn place(nodes: &mut Query<&mut Node>, entity: Option<Entity>, center: Vec2, rad
 
 fn stick_rest(pad: &VirtualPad) -> Vec2 {
     Vec2::new(
-        STICK_REST.0 * pad.unit,
+        STICK_REST.0 * pad.unit + pad.insets.x,
         pad.size.y - STICK_REST.1 * pad.unit,
     )
 }
@@ -393,10 +399,13 @@ fn layout_pad(
         return;
     };
     let size = Vec2::new(window.width(), window.height());
-    if size.x <= 1.0 || size.y <= 1.0 || size == pad.size {
+    let (inset_left, inset_right) = safe_area::fractions();
+    let insets = Vec2::new(inset_left * size.y, inset_right * size.y);
+    if size.x <= 1.0 || size.y <= 1.0 || (size == pad.size && insets == pad.insets) {
         return;
     }
     pad.size = size;
+    pad.insets = insets;
     pad.unit = size.y / 100.0;
     let unit = pad.unit;
 
@@ -405,7 +414,11 @@ fn layout_pad(
         let x = def.at.0 * unit;
         let y = def.at.1 * unit;
         let center = Vec2::new(
-            if def.right { size.x - x } else { x },
+            if def.right {
+                size.x - x - insets.y
+            } else {
+                x + insets.x
+            },
             if def.bottom { size.y - y } else { y },
         );
         let radius = def.radius * unit;

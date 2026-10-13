@@ -16,6 +16,8 @@ mod notice;
 mod platform;
 #[cfg(target_os = "ios")]
 mod prompt;
+#[cfg(target_os = "ios")]
+mod rumble;
 
 #[cfg(target_os = "ios")]
 use std::path::PathBuf;
@@ -53,6 +55,7 @@ pub fn run() {
 
     gamepad::start();
     prompt::start();
+    rumble::start();
 
     mobile::launch(&dirs);
 }

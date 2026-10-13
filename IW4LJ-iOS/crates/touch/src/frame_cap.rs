@@ -9,13 +9,22 @@
 //! The cap sleeps at the end of the main frame; it does not touch the render
 //! schedule, vsync or the display's refresh rate.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::time::{Duration, Instant};
 
 use bevy::prelude::*;
 
 /// Set from the mod menu: whether the cap is lifted.
 static UNCAPPED: AtomicBool = AtomicBool::new(false);
+
+/// How hot the device says it is: 0 nominal, 1 fair, 2 serious, 3 critical
+/// (iOS's thermal states). Serious holds the 60 fps cap even if the player
+/// lifted it; critical halves it.
+static THERMAL: AtomicU8 = AtomicU8::new(0);
+
+pub fn set_thermal_level(level: u8) {
+    THERMAL.store(level, Ordering::Relaxed);
+}
 
 pub(crate) fn set_uncapped(uncapped: bool) {
     UNCAPPED.store(uncapped, Ordering::Relaxed);
@@ -36,10 +45,15 @@ fn target() -> Option<Duration> {
 
 /// Hold the frame to the cap. Runs last in the main schedule.
 pub(crate) fn limit(mut next: Local<Option<Instant>>) {
-    let Some(frame) = target() else {
-        return;
+    let thermal = THERMAL.load(Ordering::Relaxed);
+    let sixty = Duration::from_nanos(1_000_000_000 / 60);
+    let frame = match (target(), thermal) {
+        (_, 3..) => sixty * 2,
+        (Some(frame), _) => frame,
+        (None, 2) => sixty,
+        (None, _) => return,
     };
-    if UNCAPPED.load(Ordering::Relaxed) {
+    if UNCAPPED.load(Ordering::Relaxed) && thermal < 2 {
         *next = None;
         return;
     }
