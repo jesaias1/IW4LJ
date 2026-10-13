@@ -1,3 +1,5 @@
+<p align="center"><img src="banner.png" alt="IW4LJ - MW2 / IW4X on Android / iOS"></p>
+
 # IW4LJ
 
 Phone ports of IW4L (by vladtrc) — an open-source runtime for

@@ -11,6 +11,7 @@ content MUST be in both, or an iPhone and an Android phone cannot play together.
 Identical in both folders (change both): every crate except those below.
 
 iOS only (this folder): `crates/ios`, `crates/mobile`, `crates/touch/src/ios.rs`,
+`crates/touch/src/safe_area.rs` and the thermal hook in `frame_cap.rs`,
 `ios/`, `.github/`, the iOS `cfg` branches in the shared crates listed in
 [IOS.md](IOS.md), `diag::set_launch_error_hook`.
 

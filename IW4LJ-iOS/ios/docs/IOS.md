@@ -81,12 +81,29 @@ netcode or the game content on one side only breaks the match. See
   levels dropped); 8 GB gets tier 2. The Increased Memory Limit entitlement
   (`ios/app/Entitlements-paid.plist`) needs a paid developer account.
 
+## Device-side extras (written, untested)
+
+- **Rumble**: the game's vibration goes to the pad's two handles through
+  GameController haptics (`crates/ios/src/rumble.rs`).
+- **Safe area**: the on-screen buttons keep clear of the rounded corners and
+  notch (`touch/src/safe_area.rs`, fed once a second by `platform.rs`). The
+  game's own HUD already sits inside the engine's 85 % safe area.
+- **Thermal**: when iOS reports a *serious* thermal state the 60 fps cap is held
+  even if uncapped; at *critical* the game drops to 30 fps
+  (`touch/src/frame_cap.rs`, iOS only).
+- **Memory**: the texture tier follows `os_proc_available_memory()` (what iOS
+  will still let the app use), not the phone's RAM; a memory warning is written
+  to the log with the headroom left.
+- **Audio**: the audio session is reactivated after a call/alarm and when the
+  app returns to the front; the runtime's own audio supervisor then reopens the
+  output.
+
 ## Known gaps / next steps
 
-1. Controller rumble (`GCController.haptics`).
-2. Safe areas: the HUD is drawn under the notch/Dynamic Island and rounded
-   corners, as the Android build draws under the camera cut-out.
-3. Audio interruptions (a phone call stops the output until restart).
+1. Everything above needs a real device to tune: the memory tier thresholds,
+   the thermal behaviour, haptic strength.
+2. Audio interruptions rely on the audio supervisor noticing the stalled stream.
+3. The mod menu has no iOS-specific entries.
 
 Done: the 60 fps cap with an "Uncap FPS" button in the Graphics tab (both ports,
 see [PORTS.md](PORTS.md)).
