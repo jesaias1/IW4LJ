@@ -50,6 +50,8 @@ public class GameActivity extends NativeActivity implements InputManager.InputDe
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Cleared in onPause; if it is still set at the next launch, this one died.
+        LaunchActivity.writeState(this, "starting");
         super.onCreate(savedInstanceState);
         // Input goes through the view hierarchy, to the dispatch methods below.
         getWindow().takeInputQueue(null);
@@ -271,6 +273,7 @@ public class GameActivity extends NativeActivity implements InputManager.InputDe
         handler.removeCallbacks(promptPoll);
         rumbleHandler.removeCallbacks(rumblePoll);
         releasePads();
+        LaunchActivity.writeState(this, "ok");
         super.onPause();
     }
 
