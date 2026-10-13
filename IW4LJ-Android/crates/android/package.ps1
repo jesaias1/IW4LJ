@@ -61,7 +61,8 @@ if (-not (Test-Path $cxx)) { throw "missing $cxx" }
 Remove-Item -Recurse -Force $Build -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path "$Build\classes", "$Build\dex" | Out-Null
 & $javac -source 17 -target 17 -classpath $androidJar -d "$Build\classes" `
-    (Join-Path $crate "android\java\dev\iw4j\iw4l\GameActivity.java")
+    (Join-Path $crate "android\java\dev\iw4j\iw4l\GameActivity.java") `
+    (Join-Path $crate "android\java\dev\iw4j\iw4l\LaunchActivity.java")
 
 # 3. dex.
 & (Join-Path $Jdk "bin\jar.exe") cf "$Build\classes.jar" -C "$Build\classes" .

@@ -32,6 +32,25 @@ fn main() {
     #[cfg(feature = "heap-probe")]
     heap_probe::start();
 
+    // A panic on any thread is written where `LaunchActivity` reads it, so a
+    // start that dies can say why on the next launch.
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let report = format!(
+            "{info}\nthread: {}\n{}",
+            std::thread::current().name().unwrap_or("?"),
+            std::backtrace::Backtrace::force_capture()
+        );
+        let path = format!("/data/data/{PACKAGE}/files/crash.txt");
+        let mut text = std::fs::read_to_string(&path).unwrap_or_default();
+        if text.len() < 12_000 {
+            text.push_str(&report);
+            text.push('\n');
+            let _ = std::fs::write(&path, text);
+        }
+        default_hook(info);
+    }));
+
     let files = first_existing(&[
         format!("/sdcard/Android/data/{PACKAGE}/files"),
         format!("/storage/emulated/0/Android/data/{PACKAGE}/files"),

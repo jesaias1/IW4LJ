@@ -35,6 +35,14 @@
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="iw4l_android" />
+        </activity>
+
+        <!-- The front door: starts the game, or reports why the last start died. -->
+        <activity
+            android:name="dev.iw4j.iw4l.LaunchActivity"
+            android:exported="true"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
