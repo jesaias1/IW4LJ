@@ -42,6 +42,7 @@ impl Plugin for HudPlugin {
         crate::gpu_list::register(app);
         let _ = crate::scorebar::milliseconds();
         app.init_resource::<frame::HudDraw>()
+            .init_resource::<frame::KillcamTitleDrawn>()
             .init_resource::<HudImages>()
             .init_resource::<HudPresentationGaps>()
             .init_resource::<ReticleAdsLatch>()
