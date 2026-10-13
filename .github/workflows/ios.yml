@@ -1,0 +1,46 @@
+# Builds the iOS app on a GitHub-hosted Mac, so no Mac is needed locally.
+#
+# Actions tab -> "iOS build" -> Run workflow, then download the IW4LJ-ipa
+# artifact. The IPA is unsigned: install it from Windows with Sideloadly or
+# AltStore (see IW4LJ-iOS/ios/docs/IOS-DEVICE.md).
+name: iOS build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "IW4LJ-iOS/**"
+      - ".github/workflows/ios.yml"
+
+defaults:
+  run:
+    working-directory: IW4LJ-iOS
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: IW4LJ-iOS
+          key: ios
+
+      - name: Build
+        run: ios/scripts/build-ios.sh device
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: IW4LJ-ipa
+          path: IW4LJ-iOS/target/ios/IW4LJ.ipa
+          if-no-files-found: error

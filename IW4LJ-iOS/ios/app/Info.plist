@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleExecutable</key><string>iw4lj</string>
+    <key>CFBundleIdentifier</key><string>dev.iw4j.iw4l</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>IW4LJ</string>
+    <key>CFBundleDisplayName</key><string>IW4LJ</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>0.2.0</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleIconName</key><string>AppIcon</string>
+    <key>MinimumOSVersion</key><string>16.0</string>
+    <key>LSRequiresIPhoneOS</key><true/>
+    <key>UIDeviceFamily</key>
+    <array><integer>1</integer><integer>2</integer></array>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array><string>arm64</string><string>metal</string></array>
+
+    <!-- A landscape game that uses the whole panel. -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UIRequiresFullScreen</key><true/>
+    <key>UIStatusBarHidden</key><true/>
+    <key>UIViewControllerBasedStatusBarAppearance</key><true/>
+    <key>UILaunchScreen</key><dict/>
+
+    <!-- The Files app, Finder and the Apple Devices app show this app's
+         Documents folder: that is where the MW2 install, the .iw4l-server
+         descriptor, cmds.txt and env.txt go. -->
+    <key>UIFileSharingEnabled</key><true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key><true/>
+
+    <!-- LAN play: iOS asks the player once before an app may talk to other
+         devices on the Wi-Fi. -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>IW4LJ finds and joins matches hosted by other phones on your Wi-Fi.</string>
+
+    <!-- Controllers. -->
+    <key>GCSupportsControllerUserInteraction</key><true/>
+    <key>GCSupportedGameControllers</key>
+    <array>
+        <dict><key>ProfileName</key><string>ExtendedGamepad</string></dict>
+    </array>
+
+    <key>ITSAppUsesNonExemptEncryption</key><false/>
+    <key>UIApplicationSupportsIndirectInputEvents</key><true/>
+</dict>
+</plist>

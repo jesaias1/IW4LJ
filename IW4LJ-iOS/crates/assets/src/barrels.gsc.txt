@@ -1,0 +1,74 @@
+main()
+{
+    barrels = getentarray("explodable_barrel", "targetname");
+    if (!barrels.size)
+        return;
+    level.barrel_effects["ignite"] = loadfx("props/barrel_ignite");
+    level.barrel_effects["fire"] = loadfx("props/barrel_fire_top");
+    level.barrel_effects["explode"] = loadfx("props/barrelexp");
+    precachemodel("com_barrel_piece");
+    precachemodel("com_barrel_piece2");
+    for (i = 0; i < barrels.size; i++)
+        barrels[i] thread watch_damage();
+}
+
+watch_damage()
+{
+    self endon("exploding");
+    self.barrel_damage = 0;
+    self setcandamage(true);
+    for (;;)
+    {
+        self waittill("damage", amount, attacker, direction, point, means);
+        if (means == "MOD_MELEE" || means == "MOD_IMPACT")
+            continue;
+        self.barrel_attacker = attacker;
+        first_hit = self.barrel_damage == 0;
+        self.barrel_damage += amount;
+        if (first_hit)
+            self thread burn(means);
+    }
+}
+
+burn(means)
+{
+    self endon("exploding");
+    up = anglestoup(self.angles);
+    if (means != "MOD_GRENADE_SPLASH" && means != "MOD_GRENADE")
+    {
+        playfx(level.barrel_effects["ignite"], self.origin);
+        fire = playloopedfx(level.barrel_effects["fire"], .05, self.origin + up * 44);
+        while (self.barrel_damage < 150)
+        {
+            self.barrel_damage += 10 + randomfloat(10);
+            wait 1;
+        }
+        fire delete();
+    }
+    self thread explode();
+}
+
+explode()
+{
+    self notify("exploding");
+    self notify("death");
+    self setcandamage(false);
+    self playsound("iw5:explo_metal_rand");
+    playfx(level.barrel_effects["explode"], self.origin + (0, 0, 4));
+    if (isdefined(self.target))
+    {
+        clip = getent(self.target, "targetname");
+        if (isdefined(clip))
+            clip delete();
+    }
+    radius = 250;
+    if (isdefined(self.radius))
+        radius = self.radius;
+    self radiusdamage(self.origin + (0, 0, 30), radius, 250, 1, self.barrel_attacker, "MOD_EXPLOSIVE");
+    physicsexplosionsphere(self.origin + (0, 0, 30), radius, radius / 2, 2);
+    earthquake(.4, .5, self.origin, 512);
+    if (randomint(2))
+        self setmodel("com_barrel_piece");
+    else
+        self setmodel("com_barrel_piece2");
+}

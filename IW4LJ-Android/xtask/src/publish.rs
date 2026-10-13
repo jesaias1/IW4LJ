@@ -1,0 +1,754 @@
+//! Publish an already prepared release. Compiles nothing and compresses
+//! nothing: every byte and every hash was frozen by `cargo xtask release`.
+//!
+//! The shape is content-addressed and resumable — inventory the remote by
+//! sha256, upload only what differs into a staging directory, verify it landed
+//! intact, then promote by rename. The master is switched before the client
+//! manifest, so a player never learns about a release the relay cannot serve.
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::{Duration, Instant};
+
+use serde_json::Value;
+
+use crate::dotenv::Env;
+use crate::release::{file_sha256, release_dir, sha256_hex};
+use crate::server::{Descriptor, Remote, root_dir};
+use crate::shell::{Res, Ssh, Step, capture, require_tools, run};
+
+/// How long the restarted master gets to answer `status` with the protocol the
+/// release was built against, before its predecessor is put back.
+const HEALTH_DEADLINE: Duration = Duration::from_secs(15);
+
+const MISSING: &str = "MISSING";
+
+/// One shipped file, as `deployment.json` describes it.
+struct Row {
+    local: String,
+    remote: String,
+    sha256: String,
+    size: u64,
+    immutable: bool,
+    role: String,
+}
+
+impl Row {
+    fn is_manifest(&self) -> bool {
+        self.role == "manifest"
+    }
+}
+
+struct Lock<'a> {
+    ssh: &'a Ssh,
+    dir: String,
+}
+
+impl Drop for Lock<'_> {
+    fn drop(&mut self) {
+        let _ = self
+            .ssh
+            .try_run(&format!("rmdir '{}' 2>/dev/null || true", self.dir));
+    }
+}
+
+/// stdin: one absolute path per line. stdout: `path<TAB>sha256`, or
+/// `path<TAB>MISSING`. One ssh for the whole list — sequentially hashing over
+/// ssh cost about ten seconds per file.
+const REMOTE_SHA256_LIST: &str = r#"set -eu
+while IFS= read -r path; do
+  [ -n "$path" ] || continue
+  if [ -f "$path" ]; then
+    printf "%s\t%s\n" "$path" "$(sha256sum "$path" | cut -d" " -f1)"
+  else
+    printf "%s\t%s\n" "$path" "MISSING"
+  fi
+done
+"#;
+
+/// stdin: `staged<TAB>final<TAB>octal-mode`.
+const REMOTE_PROMOTE: &str = r#"set -eu
+while IFS="$(printf "\t")" read -r staged final mode; do
+  [ -n "$staged" ] || continue
+  mkdir -p "$(dirname "$final")"
+  mv -f "$staged" "$final"
+  chmod "$mode" "$final"
+done
+"#;
+
+fn read_json(path: &Path) -> Res<Value> {
+    let text = std::fs::read_to_string(path)
+        .map_err(|error| format!("reading {}: {error}", path.display()))?;
+    serde_json::from_str(&text).map_err(|error| format!("parsing {}: {error}", path.display()))
+}
+
+fn field<'a>(value: &'a Value, key: &str, path: &Path) -> Res<&'a Value> {
+    value
+        .get(key)
+        .ok_or_else(|| format!("{} has no {key}", path.display()))
+}
+
+fn str_field(value: &Value, key: &str, path: &Path) -> Res<String> {
+    field(value, key, path)?
+        .as_str()
+        .map(str::to_string)
+        .ok_or_else(|| format!("{}: {key} is not a string", path.display()))
+}
+
+fn u64_field(value: &Value, key: &str, path: &Path) -> Res<u64> {
+    field(value, key, path)?
+        .as_u64()
+        .ok_or_else(|| format!("{}: {key} is not a number", path.display()))
+}
+
+fn rows_of(descriptor: &Value, remote: &Remote, path: &Path) -> Res<Vec<Row>> {
+    let files = field(descriptor, "files", path)?
+        .as_array()
+        .ok_or_else(|| format!("{}: files is not an array", path.display()))?;
+    files
+        .iter()
+        .map(|entry| {
+            let role = str_field(entry, "role", path)?;
+            let name = str_field(entry, "remote", path)?;
+            let remote = if role == "game-blob" {
+                format!("{}/{name}", remote.updates)
+            } else {
+                format!("{}/{name}", remote.lib)
+            };
+            Ok(Row {
+                local: str_field(entry, "local", path)?,
+                remote,
+                sha256: str_field(entry, "sha256", path)?,
+                size: u64_field(entry, "size", path)?,
+                immutable: field(entry, "immutable", path)?
+                    .as_bool()
+                    .ok_or_else(|| format!("{}: immutable is not a bool", path.display()))?,
+                role,
+            })
+        })
+        .collect()
+}
+
+fn remote_inventory(ssh: &Ssh, paths: &[String]) -> Res<Vec<(String, String)>> {
+    let input = paths.join("\n");
+    let output = ssh.feed(REMOTE_SHA256_LIST, &format!("{input}\n"))?;
+    Ok(output
+        .lines()
+        .filter_map(|line| line.split_once('\t'))
+        .map(|(path, hash)| (path.to_string(), hash.to_string()))
+        .collect())
+}
+
+fn lookup(inventory: &[(String, String)], path: &str) -> String {
+    inventory
+        .iter()
+        .find(|(known, _)| known == path)
+        .map_or(MISSING.to_string(), |(_, hash)| hash.clone())
+}
+
+fn preflight(servers: &[Descriptor]) -> Res<()> {
+    require_tools(&["curl", "rsync", "ssh"])?;
+    for server in servers {
+        let ssh = server.ssh()?;
+        let step = Step::start(
+            "preflight.ssh",
+            &format!("server={} connecting to {}", server.name(), ssh.target()),
+        );
+        ssh.run("true")
+            .map_err(|error| format!("ssh {} is not usable: {error}", ssh.target()))?;
+        step.done(&format!("connected to {}", ssh.target()));
+        discover_service(&ssh, server.port()?)?;
+    }
+    Ok(())
+}
+
+fn discover_service(ssh: &Ssh, port: u16) -> Res<Remote> {
+    let step = Step::start(
+        "discover.service",
+        &format!("host={} port={port}", ssh.host()),
+    );
+    let remote = Remote::find(ssh, port)?;
+    step.done(&format!(
+        "found service={} host={} port={} bin={} updates={}",
+        remote.unit,
+        ssh.host(),
+        remote.port,
+        remote.bin,
+        remote.updates,
+    ));
+    Ok(remote)
+}
+
+pub fn run_cli(root: &Path, args: &[String]) -> Res<()> {
+    let dir = release_dir(root)?;
+    let servers = Descriptor::select(Descriptor::all_in(&dir.join("client"))?, args)?;
+    preflight(&servers)?;
+    publish_all(&dir, &servers)
+}
+
+pub fn deploy(root: &Path, env: &Env, args: &[String]) -> Res<()> {
+    let named = Descriptor::select(Descriptor::all_in(&root_dir(env)?)?, args)?;
+    preflight(&named)?;
+    let (_, dir) = crate::release::release(root, env)?;
+    let servers = Descriptor::select(Descriptor::all_in(&dir.join("client"))?, args)?;
+    publish_all(&dir, &servers)
+}
+
+fn publish_all(dir: &Path, servers: &[Descriptor]) -> Res<()> {
+    for (index, server) in servers.iter().enumerate() {
+        if let Err(error) = publish(dir, server) {
+            let rest = servers[index..]
+                .iter()
+                .map(Descriptor::name)
+                .collect::<Vec<_>>()
+                .join(" ");
+            return Err(format!(
+                "{}: {error}\nresume with:\n  make publish {rest} RELEASE={}",
+                server.name(),
+                dir.display()
+            ));
+        }
+        println!(
+            "publish.{}: complete release={}",
+            server.name(),
+            dir.display()
+        );
+    }
+    Ok(())
+}
+
+struct CaFile(PathBuf);
+
+impl CaFile {
+    fn write(server: &Descriptor) -> Res<Self> {
+        let path = std::env::temp_dir().join(format!(
+            "iw4l-ca-{}-{}.pem",
+            std::process::id(),
+            server.name()
+        ));
+        std::fs::write(&path, server.ca_pem())
+            .map_err(|error| format!("writing {}: {error}", path.display()))?;
+        Ok(Self(path))
+    }
+}
+
+impl Drop for CaFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+fn publish(dir: &Path, server: &Descriptor) -> Res<()> {
+    let descriptor_path = dir.join("deployment.json");
+    if !descriptor_path.is_file() {
+        return Err(format!("not a prepared release: {}", dir.display()));
+    }
+    let deployment = read_json(&descriptor_path)?;
+    let release_id = str_field(&deployment, "id", &descriptor_path)?;
+    let protocol = u64_field(&deployment, "protocol", &descriptor_path)?;
+    let ssh = &server.ssh()?;
+    let remote = discover_service(ssh, server.port()?)?;
+    println!("publish: {} unit={}", server.summary(), remote.unit);
+
+    let rows = rows_of(&deployment, &remote, &descriptor_path)?;
+    let step = Step::start(
+        "verify.local",
+        &format!("release={release_id} files={}", rows.len()),
+    );
+    for row in &rows {
+        let local = dir.join(&row.local);
+        if !local.is_file() {
+            return Err(format!("missing {}", local.display()));
+        }
+        if file_sha256(&local)? != row.sha256 {
+            return Err(format!("local sha256 mismatch: {}", local.display()));
+        }
+    }
+
+    // The client and the master inside one release have to agree, or the
+    // handshake ALPN would reject every player the moment the manifest flips.
+    let manifest_path = dir.join("server/updates/manifest.toml");
+    let manifest =
+        updater::Manifest::parse(&std::fs::read(&manifest_path).map_err(|e| e.to_string())?)?;
+    if u64::from(manifest.protocol) != protocol {
+        return Err("client/master protocol mismatch inside the release".to_string());
+    }
+    step.done(&format!("sha256 verified protocol={protocol}"));
+
+    let lib = &remote.lib;
+    let step = Step::start(
+        "verify.ca",
+        &format!("host={} path={}", ssh.host(), remote.ca()),
+    );
+    let installed_ca = ssh
+        .capture(&format!("sha256sum '{}' | cut -d' ' -f1", remote.ca()))?
+        .trim()
+        .to_string();
+    if installed_ca != sha256_hex(server.ca_pem().as_bytes()) {
+        return Err(format!(
+            "{} trusts a CA other than {} on {}; players would reject this server",
+            server.path.display(),
+            remote.ca(),
+            ssh.host(),
+        ));
+    }
+    step.done("installed CA matches community descriptor");
+
+    let master_local = dir.join("server/iw4l-master");
+    let master_sha = file_sha256(&master_local)?;
+    let staging = format!("{lib}/staging/{release_id}");
+    let lock_dir = format!("{lib}/publish.lock");
+    println!(
+        "publish.lock: acquiring host={} path={lock_dir}",
+        ssh.host()
+    );
+    if !ssh.try_run(&format!("mkdir '{lock_dir}'"))? {
+        return Err(format!("publish: {} already being published", remote.unit));
+    }
+    let _lock = Lock { ssh, dir: lock_dir };
+    println!("publish.lock: acquired");
+
+    ssh.run(&format!(
+        "install -d -m 0755 '{staging}' '{lib}/manifests' '{lib}/masters/{master_sha}' '{updates}'",
+        updates = remote.updates,
+    ))?;
+    println!("publish.staging: ready host={} path={staging}", ssh.host());
+
+    let inventory_started = Instant::now();
+    let finals: Vec<String> = rows.iter().map(|row| row.remote.clone()).collect();
+    let step = Step::start(
+        "inventory.remote",
+        &format!("host={} files={}", ssh.host(), finals.len()),
+    );
+    let inventory = remote_inventory(ssh, &finals)?;
+    step.done("remote sha256 inventory collected");
+
+    let mut need = Vec::new();
+    let (mut upload_bytes, mut skipped) = (0_u64, 0_usize);
+    for row in &rows {
+        let existing = lookup(&inventory, &row.remote);
+        if existing == row.sha256 {
+            skipped += 1;
+            continue;
+        }
+        if existing != MISSING && row.immutable {
+            return Err(format!("immutable collision at {}", row.remote));
+        }
+        upload_bytes += row.size;
+        need.push(row);
+    }
+    println!(
+        "upload: start files={} bytes={upload_bytes} skipped={skipped} inventory={}s",
+        need.len(),
+        inventory_started.elapsed().as_secs()
+    );
+
+    let upload_started = Instant::now();
+    if !need.is_empty() {
+        for row in &need {
+            let remote = format!("{staging}/{}", row.local);
+            println!(
+                "upload.file: {} -> {}:{remote} bytes={}",
+                row.local,
+                ssh.host(),
+                row.size,
+            );
+            let parent = remote.rsplit_once('/').map_or("", |(head, _)| head);
+            ssh.run(&format!("install -d -m 0755 '{parent}'"))?;
+            ssh.rsync(
+                &["--info=progress2", "--stats", "--chmod=F644"],
+                &dir.join(&row.local),
+                &remote,
+            )?;
+        }
+        let staged: Vec<String> = need
+            .iter()
+            .map(|row| format!("{staging}/{}", row.local))
+            .collect();
+        let step = Step::start("verify.staged", &format!("files={}", staged.len()));
+        let landed = remote_inventory(ssh, &staged)?;
+        for (row, path) in need.iter().zip(&staged) {
+            if lookup(&landed, path) != row.sha256 {
+                return Err(format!("staged sha256 mismatch: {path}"));
+            }
+        }
+        step.done("uploaded sha256 hashes match release");
+    }
+    println!(
+        "upload: done elapsed={}s",
+        upload_started.elapsed().as_secs()
+    );
+
+    // The manifest is not promoted with the rest: it is the switch, and it is
+    // thrown only after the master answers on the new protocol.
+    let promote: String = need
+        .iter()
+        .filter(|row| !row.is_manifest())
+        .map(|row| {
+            let mode = if row.role == "master" { "755" } else { "644" };
+            format!("{staging}/{}\t{}\t{mode}\n", row.local, row.remote)
+        })
+        .collect();
+    if !promote.is_empty() {
+        let step = Step::start(
+            "promote.files",
+            &format!(
+                "files={}",
+                need.iter().filter(|row| !row.is_manifest()).count()
+            ),
+        );
+        ssh.feed(REMOTE_PROMOTE, &promote)?;
+        step.done("staged files moved into place");
+    }
+
+    let master = MasterSwitch {
+        ssh,
+        remote: &remote,
+        server_name: server.server_name(),
+        master_sha: &master_sha,
+        protocol,
+    };
+    master.activate()?;
+    // `activate` returns early when the binary is unchanged, and an unchanged
+    // binary can still be a stale process. Ask before throwing the switch.
+    let running = master.running_protocol();
+    if running != Some(protocol) {
+        return Err(format!(
+            "publish: running master protocol {} != client {protocol}",
+            running.map_or("none".to_string(), |value| value.to_string())
+        ));
+    }
+
+    let previous = activate_manifest(ssh, &remote, dir, &staging, &release_id)?;
+    let ca_pem = CaFile::write(server)?;
+    let updates = dir.join("server/updates");
+    println!("verify.served: start release={release_id}");
+    if let Err(error) = verify_served(server, &ca_pem.0, &updates, &manifest.file.path) {
+        let restored = match &previous {
+            Some(previous) => restore_manifest(ssh, &remote, previous).map_or_else(
+                |e| format!("restoring {previous} failed: {e}"),
+                |()| format!("restored {previous}"),
+            ),
+            None => "no previous manifest to restore".to_string(),
+        };
+        return Err(format!("{error}; {restored}"));
+    }
+    println!("verify.served: ok manifest+blob release={release_id}");
+
+    println!("[deploy] master health (on {})", ssh.host());
+    ssh.run(&remote.probe_command(server.server_name()))?;
+
+    local_reachability(server, &master_local, &ca_pem.0)?;
+    println!(
+        "[deploy] {} healthy: master udp/{port}, updates {url}",
+        server.name(),
+        port = remote.port,
+        url = server.community.updates.url,
+    );
+    let step = Step::start("publish.cleanup", &format!("path={staging}"));
+    ssh.run(&format!("rm -rf '{staging}'"))?;
+    step.done("staging removed");
+    Ok(())
+}
+
+struct MasterSwitch<'a> {
+    ssh: &'a Ssh,
+    remote: &'a Remote,
+    server_name: &'a str,
+    master_sha: &'a str,
+    protocol: u64,
+}
+
+impl MasterSwitch<'_> {
+    fn running_protocol(&self) -> Option<u64> {
+        let status = self
+            .ssh
+            .capture(&self.remote.probe_command(self.server_name))
+            .ok()?;
+        parse_protocol(&status)
+    }
+
+    fn point_at(&self, sha: &str) -> Res<()> {
+        let lib = &self.remote.lib;
+        self.ssh.run(&format!(
+            "set -eu
+            cp '{lib}/masters/{sha}/iw4l-master' '{bin}.new'
+            chmod 755 '{bin}.new'
+            mv -T '{bin}.new' '{bin}'
+            systemctl restart '{unit}'",
+            bin = self.remote.bin,
+            unit = self.remote.unit,
+        ))
+    }
+
+    fn activate(&self) -> Res<()> {
+        let unit = &self.remote.unit;
+        let lib = &self.remote.lib;
+        let bin = &self.remote.bin;
+        let old_pid = self
+            .ssh
+            .capture(&format!("systemctl show -p MainPID --value '{unit}'"))
+            .unwrap_or_else(|_| "0".to_string());
+        let old_pid = old_pid.trim().to_string();
+        let current_sha = self
+            .ssh
+            .capture(&format!(
+                "if [ -f '{bin}' ]; then sha256sum '{bin}' | cut -d' ' -f1; fi"
+            ))
+            .unwrap_or_else(|_| String::new());
+        let current_sha = current_sha.trim().to_string();
+        if current_sha == self.master_sha {
+            println!("activate.master: unchanged pid={old_pid}");
+            return Ok(());
+        }
+        let named = if current_sha.is_empty() {
+            "none"
+        } else {
+            &current_sha
+        };
+        println!(
+            "activate.master: start old_sha={named} new_sha={}",
+            self.master_sha
+        );
+        // Keep the binary that is running now, so a failed health check has
+        // something to go back to even if it was never published from here.
+        self.ssh.run(&format!(
+            "set -eu
+            if [ -n '{current_sha}' ] && [ ! -f '{lib}/masters/{current_sha}/iw4l-master' ]; then
+              install -d -m 0755 '{lib}/masters/{current_sha}'
+              cp '{bin}' '{lib}/masters/{current_sha}/iw4l-master'
+            fi
+            test -f '{lib}/masters/{new}/iw4l-master'",
+            new = self.master_sha,
+        ))?;
+        self.point_at(self.master_sha)?;
+
+        let deadline = Instant::now() + HEALTH_DEADLINE;
+        loop {
+            let seen = self.running_protocol();
+            if seen == Some(self.protocol) {
+                break;
+            }
+            if let Some(other) = seen {
+                println!(
+                    "activate.master: waiting for protocol={} (saw {other})",
+                    self.protocol
+                );
+            }
+            if Instant::now() >= deadline {
+                println!(
+                    "activate.master: health deadline protocol={}; restoring previous master",
+                    seen.map_or("none".to_string(), |value| value.to_string())
+                );
+                if !current_sha.is_empty() {
+                    let _ = self.point_at(&current_sha);
+                }
+                return Err(
+                    "publish: master activation failed; client manifest not switched".to_string(),
+                );
+            }
+            std::thread::sleep(Duration::from_secs(1));
+        }
+        let new_pid = self
+            .ssh
+            .capture(&format!("systemctl show -p MainPID --value '{unit}'"))?;
+        println!(
+            "activate.master: done pid={} protocol={}",
+            new_pid.trim(),
+            self.protocol
+        );
+        println!(
+            "[deploy] note: replacing master is not a seamless keep of existing QUIC sessions"
+        );
+        Ok(())
+    }
+}
+
+fn parse_protocol(status: &str) -> Option<u64> {
+    status
+        .split_whitespace()
+        .find_map(|token| token.strip_prefix("protocol="))
+        .and_then(|value| value.parse().ok())
+}
+
+fn activate_manifest(
+    ssh: &Ssh,
+    remote: &Remote,
+    dir: &Path,
+    staging: &str,
+    release_id: &str,
+) -> Res<Option<String>> {
+    let lib = &remote.lib;
+    let local = dir.join("server/updates/manifest.toml");
+    let local_sha = file_sha256(&local)?;
+    let live = format!("{}/manifest.toml", remote.updates);
+    let archived = format!("{lib}/manifests/{release_id}.toml");
+    let remote_live = ssh
+        .capture(&format!(
+            "if [ -f '{live}' ]; then sha256sum '{live}' | cut -d' ' -f1; fi"
+        ))?
+        .trim()
+        .to_string();
+    if remote_live == local_sha {
+        println!("activate.manifest: unchanged release={release_id}");
+        return Ok(None);
+    }
+    let previous = (!remote_live.is_empty())
+        .then(|| format!("{lib}/manifests/replaced-{}.toml", &remote_live[..16]));
+    // The manifest may have been skipped above — its archived copy can already
+    // match while the live one does not, which is exactly a rollback. Put it in
+    // staging unconditionally; it is one small file.
+    let staged = format!("{staging}/server/updates/manifest.toml");
+    ssh.run(&format!("install -d -m 0755 '{staging}/server/updates'"))?;
+    ssh.rsync(&["--chmod=F644"], &local, &staged)?;
+    ssh.run(&format!(
+        "set -eu
+        if [ -n '{previous}' ]; then cp -f '{live}' '{previous}'; fi
+        cp -f '{staged}' '{archived}'
+        chmod 644 '{archived}'
+        mv -T '{staged}' '{live}.new'
+        chmod 644 '{live}.new'
+        mv -T '{live}.new' '{live}'",
+        previous = previous.as_deref().unwrap_or(""),
+    ))?;
+    println!("activate.manifest: done release={release_id}");
+    Ok(previous)
+}
+
+fn restore_manifest(ssh: &Ssh, remote: &Remote, previous: &str) -> Res<()> {
+    let live = format!("{}/manifest.toml", remote.updates);
+    ssh.run(&format!(
+        "set -eu
+        cp -f '{previous}' '{live}.new'
+        chmod 644 '{live}.new'
+        mv -T '{live}.new' '{live}'"
+    ))
+}
+
+fn verify_served(
+    community: &Descriptor,
+    ca_pem: &Path,
+    local_updates: &Path,
+    blob: &str,
+) -> Res<()> {
+    let scratch = std::env::temp_dir().join(format!("iw4l-verify-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).map_err(|e| e.to_string())?;
+    let result = (|| {
+        for (name, timeout) in [("manifest.toml", "10"), (blob, "300")] {
+            let got = scratch.join(name);
+            println!("verify.served: fetching {name} from {}", community.host());
+            fetch(community, ca_pem, name, timeout, &got)?;
+            if file_sha256(&got)? != file_sha256(&local_updates.join(name))? {
+                return Err(format!("served {name} does not match the prepared release"));
+            }
+            println!("verify.served: sha256 verified {name}");
+        }
+        Ok(())
+    })();
+    let _ = std::fs::remove_dir_all(&scratch);
+    result
+}
+
+fn fetch(community: &Descriptor, ca_pem: &Path, name: &str, timeout: &str, out: &Path) -> Res<()> {
+    let port = master_port(community);
+    let tls = community.server_name();
+    run(Command::new("curl")
+        .args([
+            "--fail",
+            "--show-error",
+            "--silent",
+            "--connect-timeout",
+            "5",
+        ])
+        .args(["--max-time", timeout, "--cacert"])
+        .arg(ca_pem)
+        .args(["--noproxy", "*", "--connect-to"])
+        .arg(format!("{tls}:{port}:{}:{port}", community.host()))
+        .arg("-o")
+        .arg(out)
+        .arg(format!("https://{tls}:{port}/updates/{name}")))
+}
+
+fn master_port(community: &Descriptor) -> &str {
+    let address = &community.community.master.address;
+    address.rsplit_once(':').map_or("", |(_, port)| port)
+}
+
+/// A relay the VPS can reach but this machine cannot is usually a tun/VPN
+/// device that forwards TCP and drops UDP — not a broken deploy.
+fn local_reachability(community: &Descriptor, master_bin: &Path, ca_pem: &Path) -> Res<()> {
+    println!("[deploy] master reachability (from this machine)");
+    let reachable = Command::new("timeout")
+        .arg("5")
+        .arg(master_bin)
+        .arg("status")
+        .args(["--connect", &community.community.master.address])
+        .args(["--server-name", community.server_name()])
+        .arg("--ca-cert")
+        .arg(ca_pem)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+    if reachable {
+        return Ok(());
+    }
+    let host = community.host();
+    let host_ip = capture(Command::new("getent").args(["ahostsv4", host]))
+        .ok()
+        .and_then(|text| {
+            text.lines()
+                .next()
+                .and_then(|line| line.split_whitespace().next().map(str::to_string))
+        });
+    let egress = host_ip
+        .as_deref()
+        .filter(|_| crate::shell::tool_on_path("ip"))
+        .and_then(|ip| capture(Command::new("ip").args(["-o", "route", "get", ip])).ok())
+        .and_then(|route| {
+            let mut tokens = route.split_whitespace();
+            while let Some(token) = tokens.next() {
+                if token == "dev" {
+                    return tokens.next().map(str::to_string);
+                }
+            }
+            None
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+    let port = master_port(community);
+    eprintln!(
+        "[deploy] WARNING: udp/{port} unreachable from this machine, though the host answers itself."
+    );
+    eprintln!(
+        "[deploy]   route to {host} leaves via {egress}; a tun/VPN device forwards TCP but often drops UDP."
+    );
+    eprintln!(
+        "[deploy]   this is not automatically a VPS fault; set IW4L_DEPLOY_REQUIRE_LOCAL_UDP=1 to make this fatal."
+    );
+    if std::env::var("IW4L_DEPLOY_REQUIRE_LOCAL_UDP").as_deref() == Ok("1") {
+        return Err(format!("udp/{port} unreachable from this machine"));
+    }
+    Ok(())
+}
+
+pub fn logs(env: &Env, args: &[String]) -> Res<()> {
+    const USAGE: &str = "usage: cargo xtask logs NAME [--since 2h]";
+    let (name, rest) = args.split_first().ok_or(USAGE)?;
+    let since = match rest {
+        [] => std::env::var("SINCE")
+            .ok()
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| "2h".to_string()),
+        [flag, value] if flag == "--since" => value.clone(),
+        _ => return Err(USAGE.to_string()),
+    };
+    crate::master::check_since(&since)?;
+    let [server] = &Descriptor::select(
+        Descriptor::all_in(&root_dir(env)?)?,
+        std::slice::from_ref(name),
+    )?[..] else {
+        return Err(USAGE.to_string());
+    };
+    let ssh = server.ssh()?;
+    let remote = Remote::find(&ssh, server.port()?)?;
+    crate::master::journal(&ssh, &remote.unit, &since)
+}
