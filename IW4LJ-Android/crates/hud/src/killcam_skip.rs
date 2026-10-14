@@ -87,7 +87,11 @@ impl ExprHost for KillcamExprHost<'_> {
         Err(ExprError::Host("weapon lock"))
     }
     fn dvar_int(&self, name: &str) -> Result<i32, ExprError> {
-        if let Some(value) = self.dvars.int(name) {
+        if name.eq_ignore_ascii_case("scr_gameended") && self.game_ended != 0 {
+            // The final killcam is the end of the game, whatever the script's
+            // own flag says yet; otherwise the ordinary killcam bars draw over it.
+            Ok(1)
+        } else if let Some(value) = self.dvars.int(name) {
             Ok(value)
         } else if name.eq_ignore_ascii_case("scr_gameended") {
             Ok(self.game_ended)
