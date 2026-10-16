@@ -9,12 +9,13 @@ PC or a Mac, a copy of **Modern Warfare 2 multiplayer** you own (about 12 GB: th
 
 ## 1. Get the app (`IW4LJ.ipa`)
 
-The IPA is built by GitHub, so no Mac is needed:
+Download **IW4LJ.ipa** from this repository's **Releases** page (right-hand side of
+the repo's main page, then the newest *iOS* release):
+<https://github.com/jesaias1/IW4LJ/releases/latest>
 
-1. Open this repository's **Actions** tab → **iOS build**.
-2. Open the newest successful run and download the **IW4LJ-ipa** artifact; unzip it
-   to get `IW4LJ.ipa`. (Or press **Run workflow** to build a fresh one, about an
-   hour.)
+The IPA is built by GitHub, so no Mac is needed. If you want a fresher build than
+the release, open the **Actions** tab, then **iOS build**, pick the newest
+successful run and download the **IW4LJ-ipa** artifact (unzip it to get the IPA).
 
 On a Mac you can instead run `IW4LJ-iOS/ios/scripts/build-ios.sh`.
 
@@ -67,6 +68,25 @@ put your `mw2` folder (containing `zone/` and `main/`) into it:
   *IW4LJ → iw4l-artifacts → logs*, and send the newest file with your report.
 - A message about a missing folder: the game isn't in `IW4LJ/mw2`.
 - Can't install / "Unable to verify": the 7-day signature ran out — reinstall.
+
+### Sideloadly fails with "GSA returned a non-plist response (HTTP 503)"
+
+That is Apple's sign-in server (`gsa.apple.com`) refusing the request; the IPA is
+not involved and it is not something this app can fix. Usually it passes:
+
+1. Wait 10-30 minutes and try again; Apple's servers have bad spells.
+2. Turn off any VPN, proxy or DNS filter, or switch network (a phone hotspot
+   works). Antivirus "HTTPS scanning" can also break the connection.
+3. Update Sideloadly to the latest version (sideloadly.io).
+4. On Windows, install iTunes and iCloud from apple.com (not the Microsoft Store
+   versions); Sideloadly depends on them.
+5. If the Apple ID uses two-factor authentication, create an app-specific password
+   at appleid.apple.com (Sign-In and Security, then App-Specific Passwords) and
+   use that instead of the normal password.
+6. Try a different (new, free) Apple ID.
+7. Try AltStore instead; it signs through a different route.
+
+If it still fails, send the full text from Sideloadly's log with your report.
 
 More detail: [`IW4LJ-iOS/ios/docs/IOS-DEVICE.md`](IW4LJ-iOS/ios/docs/IOS-DEVICE.md)
 and [`IW4LJ-iOS/ios/docs/IOS.md`](IW4LJ-iOS/ios/docs/IOS.md).
