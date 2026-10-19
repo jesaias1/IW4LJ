@@ -139,15 +139,6 @@ pub fn set_view(width: u32, height: u32, render_height: u32) {
     }
 }
 
-/// The game view's real size in pixels, once known.
-#[cfg(target_os = "ios")]
-pub(crate) fn view_size() -> Option<Vec2> {
-    VIEW.lock()
-        .ok()
-        .and_then(|view| *view)
-        .map(|(width, height, _)| Vec2::new(width as f32, height as f32))
-}
-
 /// Render below the panel's resolution.
 ///
 /// The window is told it is smaller than the surface it draws to; the swapchain
@@ -286,6 +277,8 @@ pub(crate) struct Pads {
     /// axis is the truth, including its return to rest.
     analog_triggers: HashSet<i32>,
     hats: HashSet<i32>,
+    /// Whether Select is held on a device, while the trickshot teleport is on.
+    select_held: HashMap<i32, bool>,
     /// Events for a pad connected this frame. Bevy gives the entity its
     /// `Gamepad` when the connection is applied, and drops input for an entity
     /// that has none yet, so they wait one frame.
@@ -294,7 +287,7 @@ pub(crate) struct Pads {
 
 static TP_PAD: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// Whether the stick clicks are the trickshot teleport (see the TRICKSHOT tab).
+/// Whether Select + d-pad is the trickshot teleport (see the TRICKSHOT tab).
 pub(crate) fn tp_pad() -> bool {
     TP_PAD.load(std::sync::atomic::Ordering::Relaxed)
 }
@@ -414,13 +407,22 @@ pub(crate) fn pump(
         match event {
             BridgeEvent::PadButton { keycode, down, .. } => {
                 if let Some(button) = button(keycode) {
-                    // Stick clicks become the trickshot teleport while it is
-                    // on, and never reach the game: L3 saves, R3 returns.
-                    if tp_pad() && matches!(button, GamepadButton::LeftThumb | GamepadButton::RightThumb) {
-                        if down {
-                            queue.push_line(if button == GamepadButton::LeftThumb { "save" } else { "load" });
+                    // While the trickshot teleport is on, Select is a modifier
+                    // that never reaches the game: Select + d-pad left saves,
+                    // Select + d-pad right returns. The sticks stay the game's
+                    // (sprint, stance), and so does every other button.
+                    if tp_pad() {
+                        if button == GamepadButton::Select {
+                            pads.select_held.insert(device, down);
+                            continue;
                         }
-                        continue;
+                        let select = pads.select_held.get(&device).copied().unwrap_or(false);
+                        if select && matches!(button, GamepadButton::DPadLeft | GamepadButton::DPadRight) {
+                            if down {
+                                queue.push_line(if button == GamepadButton::DPadLeft { "save" } else { "load" });
+                            }
+                            continue;
+                        }
                     }
                     press(pads,&mut raw, button, f32::from(u8::from(down)));
                 }
@@ -460,6 +462,16 @@ pub(crate) fn pump(
                         (GamepadButton::DPadUp, hat_y < -0.5),
                         (GamepadButton::DPadDown, hat_y > 0.5),
                     ] {
+                        if tp_pad()
+                            && matches!(button, GamepadButton::DPadLeft | GamepadButton::DPadRight)
+                            && pads.select_held.get(&device).copied().unwrap_or(false)
+                        {
+                            let value = f32::from(u8::from(held));
+                            if pads.buttons.insert((device, button), value) != Some(value) && held {
+                                queue.push_line(if button == GamepadButton::DPadLeft { "save" } else { "load" });
+                            }
+                            continue;
+                        }
                         press(pads,&mut raw, button, f32::from(u8::from(held)));
                     }
                 }
