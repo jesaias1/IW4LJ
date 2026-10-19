@@ -379,6 +379,7 @@ pub(crate) fn explode_offhand_in_hand(
         attacker: id,
         attacker_life: owner_life,
         killcam_entity_start_time: level_time_ms(tick),
+        no_self: false,
     };
     crate::damage::apply_explosion_blast(world, tick, &blast);
 }
@@ -1375,6 +1376,7 @@ pub(crate) fn think_projectile(world: &mut FrameWorld, tick: Tick, entnum: i32) 
             attacker: info.projectile.owner,
             attacker_life: info.projectile.owner_life,
             killcam_entity_start_time: projectile_birth_ms(&info.projectile),
+            no_self: false,
         };
         crate::damage::apply_explosion_blast(world, tick, &blast);
         crate::damage::apply_shared_glass_blast(

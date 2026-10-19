@@ -86,6 +86,8 @@ pub struct TrickshotLoop {
     pub bot: Option<([f32; 3], [f32; 3])>,
     /// The next match has to be set up again once its player is alive.
     pub rearm: bool,
+    /// Explosive bullets were asked for; set again on every respawn.
+    pub explosive: bool,
 }
 
 /// The mod menu is open. The game's controls are held off for as long as it is,

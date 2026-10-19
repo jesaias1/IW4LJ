@@ -44,6 +44,10 @@ pub(crate) fn register_trickshot_commands(registry: &mut ConsoleRegistry) {
             "stillbot — add a bot that never moves or shoots, standing where you are now (needs cheats)",
         ),
         (
+            "explosivebullets",
+            "explosivebullets [on|off] — every bullet also explodes where it lands, so a trickshot needs no perfect hit (needs cheats)",
+        ),
+        (
             "trickshot",
             "trickshot [off] — restart the map as Search and Destroy with no round timer; the first round won takes the match",
         ),
@@ -101,6 +105,32 @@ pub(crate) fn route_trickshot_commands(
                 bot_add.push_dummy_at(origin, angles);
                 echo("stillbot: a frozen bot is joining at your position".into());
             }
+            "explosivebullets" => {
+                let want = match cmd.args.first().map(String::as_str) {
+                    None => !looping.explosive,
+                    Some("on" | "1") => true,
+                    Some("off" | "0") => false,
+                    Some(_) => {
+                        echo("usage: explosivebullets [on|off]".into());
+                        continue;
+                    }
+                };
+                let word = if want { "on" } else { "off" };
+                let Some(authority) = authority.as_deref_mut().filter(|_| live) else {
+                    looping.explosive = want;
+                    echo(format!("explosivebullets {word}: it applies once a match is running"));
+                    continue;
+                };
+                if !authority.0.cheats_enabled() {
+                    echo("explosivebullets: cheats are off".into());
+                    continue;
+                }
+                looping.explosive = want;
+                authority
+                    .0
+                    .set_gsc_dvar("iw4l_explosive_bullets", if want { "1" } else { "0" });
+                echo(format!("explosivebullets {word}"));
+            }
             "lastkill" => {
                 let Some(authority) = authority.as_deref_mut().filter(|_| live) else {
                     echo("lastkill: host a match first".into());
@@ -143,6 +173,14 @@ pub(crate) fn route_trickshot_commands(
 
     // A looped round has begun again: put the limits and the bot back.
     let respawned = lives.read().any(|life| life.client == local.0.0);
+    // A new match starts without the dvar: put the practice cheat back.
+    if respawned
+        && looping.explosive
+        && let Some(authority) = authority.as_deref_mut()
+        && authority.0.cheats_enabled()
+    {
+        authority.0.set_gsc_dvar("iw4l_explosive_bullets", "1");
+    }
     if respawned && looping.rearm {
         if let Some(authority) = authority.as_deref_mut()
             && authority.0.cheats_enabled()

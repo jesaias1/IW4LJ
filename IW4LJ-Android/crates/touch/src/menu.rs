@@ -129,7 +129,7 @@ const fn set(label: &'static str, setting: Setting, value: i32) -> Item {
     }
 }
 
-const TOGGLES: usize = 6;
+const TOGGLES: usize = 7;
 /// The toggle that turns Select + d-pad left/right into save/load position.
 const TP_SLOT: usize = 5;
 
@@ -176,6 +176,7 @@ const TABS: [Tab; 8] = [
             toggle("NOCLIP", 1, "noclip on", "noclip off"),
             toggle("GOD MODE", 2, "god", "god"),
             toggle("PAD SAVE/LOAD", 5, "", ""),
+            toggle("EXPLOSIVE BULLETS", 6, "explosivebullets on", "explosivebullets off"),
             line("BOT HERE", "stillbot"),
             line("NEXT KILL WINS", "lastkill"),
             line("TRICKSHOT S&D", "trickshot"),

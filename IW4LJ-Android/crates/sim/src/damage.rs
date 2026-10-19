@@ -74,6 +74,8 @@ pub(crate) struct ExplosionBlast {
     pub attacker: ClientId,
     pub attacker_life: LifeSequence,
     pub killcam_entity_start_time: i32,
+    /// The blast leaves its own attacker alone (a cheat's explosive bullets).
+    pub no_self: bool,
 }
 
 impl ExplosionBlast {
@@ -367,6 +369,9 @@ fn radius_player_attempts(world: &FrameWorld, blast: &ExplosionBlast) -> Vec<Dam
         return intents;
     }
     for target in radius_player_candidates(world, blast.origin, blast.radius) {
+        if blast.no_self && target == blast.attacker {
+            continue;
+        }
         let Some(meta) = world.client_meta(target) else {
             continue;
         };
