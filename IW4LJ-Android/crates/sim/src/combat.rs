@@ -1348,6 +1348,28 @@ pub(crate) fn phase_trace(
         if segments.is_empty() {
             continue;
         }
+        if facts.weap_type == weapon_iw4::WEAPTYPE_BULLET
+            && world.publishes_snapshot()
+            && explosive_bullets_on(world)
+            && let Some(hit) = segments.last()
+        {
+            // Pulled back off the surface so the blast is not inside it.
+            let origin: [f32; 3] = std::array::from_fn(|i| hit.end[i] - em.direction[i] * 6.0);
+            let blast = crate::damage::ExplosionBlast {
+                cone: None,
+                origin,
+                radius: EXPLOSIVE_BULLET_RADIUS,
+                inner_damage: EXPLOSIVE_BULLET_DAMAGE,
+                outer_damage: EXPLOSIVE_BULLET_DAMAGE * 0.6,
+                weapon: em.weapon,
+                source: DamageSource::Shot(em.shot_id),
+                attacker: em.attacker,
+                attacker_life: em.attacker_life,
+                killcam_entity_start_time: 0,
+                no_self: true,
+            };
+            crate::damage::apply_explosion_blast(world, tick, &blast);
+        }
         let mut glass_hit: Vec<u32> = Vec::new();
         for segment in &segments {
             let ordinal = segment_ordinals.entry((em.shot_id, em.pellet)).or_default();
@@ -1883,6 +1905,20 @@ fn shot_collision_geometry(
             _ => ShotCollisionGeometry::Miss,
         },
     }
+}
+
+/// Practice cheat: every bullet also bursts where it lands, so a trickshot
+/// does not need a perfect hit. Reach and damage are generous on purpose.
+const EXPLOSIVE_BULLET_RADIUS: f32 = 190.0;
+const EXPLOSIVE_BULLET_DAMAGE: f32 = 220.0;
+
+fn explosive_bullets_on(world: &mut FrameWorld) -> bool {
+    world.cheats_enabled()
+        && world
+            .ecs()
+            .get_resource::<crate::script::MatchScript>()
+            .and_then(|script| script.dvars.get("iw4l_explosive_bullets"))
+            .is_some_and(|value| value.trim() == "1")
 }
 
 pub(crate) fn bullet_process_on_hit(collider: Option<ColliderId>) -> bool {

@@ -1,0 +1,39 @@
+name: Bug report
+description: Something is broken in the Android or iPhone port
+labels: [bug]
+body:
+  - type: dropdown
+    id: port
+    attributes:
+      label: Which port?
+      options: [Android, iPhone / iPad]
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone model and OS version
+      placeholder: "e.g. Galaxy S23, Android 14"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Release you installed
+      placeholder: "e.g. android-v0.2.1"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you saw. Which map or weapon, if it matters.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Error report (if the app showed one)
+      description: Android shows a report screen after a failed start. Tap Copy and paste it here.
+      render: text
+  - type: markdown
+    attributes:
+      value: A screenshot or short video helps a lot for model, animation and killcam problems.

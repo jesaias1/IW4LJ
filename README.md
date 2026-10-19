@@ -42,7 +42,7 @@ server error; the install guide has a fix list.
 | **Mod menu on the phone** | Tap **MENU** (or three-finger tap, or the controller's home button) for tabs: **LAN, TRICKSHOT, SKINS, MATCH, BOTS, MAPS, ACCOUNT, GRAPHICS**. |
 | **Progression** | Unlock everything in one tap, set prestige 0-10, or reset. Your profile and settings are saved between launches. |
 | **Weapon skins** | Paint your gun from the SKINS tab. |
-| **Trickshot toolkit** | Noclip, god mode, save / load a position, spawn at the saved spot, still bot, "next kill wins" final killcam, trickshot search and destroy, 1 HP, ammo refill. Controller shortcut: **hold Select, D-pad left saves, D-pad right loads**. |
+| **Trickshot toolkit** | Noclip, god mode, **explosive bullets** (every shot also bursts where it lands, so you don't need a perfect hit), save / load a position, spawn at the saved spot, still bot, "next kill wins" final killcam, trickshot search and destroy, 1 HP, ammo refill. Controller shortcut: **hold Select, D-pad left saves, D-pad right loads**. |
 | **Performance controls** | Held to **60 fps** by default to stay cool in long sessions; **UNCAP FPS** for strong phones. Render resolution and texture quality settings for weaker ones. |
 | **Helpful errors** | If the Android app cannot start it shows what went wrong (game files found?, saved error, device) with Copy / Share buttons, instead of a black screen. |
 | **Open source** | Rust and Bevy, Apache 2.0, source for both ports in this repo. |
@@ -51,7 +51,7 @@ Gameplay is still incomplete: expect missing behaviour, bugs and the occasional 
 
 ### Trickshot tools
 
-The mod menu's **TRICKSHOT** tab gives you noclip, god mode, saving and loading a position,
+The mod menu's **TRICKSHOT** tab gives you noclip, god mode, **explosive bullets** (a toggle; it is a cheat, so it only works in your own hosted match), saving and loading a position,
 respawning at the saved spot, a still bot to shoot, "next kill wins" for a final killcam,
 a trickshot search and destroy setup, 1 HP and ammo refill.
 
