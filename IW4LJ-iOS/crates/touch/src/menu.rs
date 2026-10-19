@@ -130,7 +130,7 @@ const fn set(label: &'static str, setting: Setting, value: i32) -> Item {
 }
 
 const TOGGLES: usize = 6;
-/// The toggle that turns the stick clicks into the trickshot teleport.
+/// The toggle that turns Select + d-pad left/right into save/load position.
 const TP_SLOT: usize = 5;
 
 struct Tab {
@@ -175,7 +175,7 @@ const TABS: [Tab; 8] = [
             toggle("SPAWN AT SAVED", 0, "loadspawn on", "loadspawn off"),
             toggle("NOCLIP", 1, "noclip on", "noclip off"),
             toggle("GOD MODE", 2, "god", "god"),
-            toggle("L3/R3 TP", 5, "", ""),
+            toggle("SELECT+DPAD TP", 5, "", ""),
             line("BOT HERE", "stillbot"),
             line("NEXT KILL WINS", "lastkill"),
             line("TRICKSHOT S&D", "trickshot"),
