@@ -139,6 +139,15 @@ pub fn set_view(width: u32, height: u32, render_height: u32) {
     }
 }
 
+/// The game view's real size in pixels, once known.
+#[cfg(target_os = "ios")]
+pub(crate) fn view_size() -> Option<Vec2> {
+    VIEW.lock()
+        .ok()
+        .and_then(|view| *view)
+        .map(|(width, height, _)| Vec2::new(width as f32, height as f32))
+}
+
 /// Render below the panel's resolution.
 ///
 /// The window is told it is smaller than the surface it draws to; the swapchain
