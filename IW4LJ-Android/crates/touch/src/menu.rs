@@ -168,14 +168,14 @@ const TABS: [Tab; 8] = [
     },
     Tab {
         name: "TRICKSHOT",
-        hint: "Noclip to a spot, save it, and every respawn puts you back there.",
+        hint: "Noclip to a spot, save it, and every respawn puts you back there. Controller: turn on PAD SAVE/LOAD, then hold SELECT and press D-PAD LEFT to save, D-PAD RIGHT to load.",
         items: &[
             line("SAVE POSITION", "save"),
             line("LOAD POSITION", "load"),
             toggle("SPAWN AT SAVED", 0, "loadspawn on", "loadspawn off"),
             toggle("NOCLIP", 1, "noclip on", "noclip off"),
             toggle("GOD MODE", 2, "god", "god"),
-            toggle("SELECT+DPAD TP", 5, "", ""),
+            toggle("PAD SAVE/LOAD", 5, "", ""),
             line("BOT HERE", "stillbot"),
             line("NEXT KILL WINS", "lastkill"),
             line("TRICKSHOT S&D", "trickshot"),

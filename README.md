@@ -31,21 +31,21 @@ The iPhone build is unsigned: you sign and install it with Sideloadly or AltStor
 free Apple ID (it must be re-signed every 7 days). Sign-in sometimes fails with an Apple
 server error; the install guide has a fix list.
 
-## What you can do
+## Features
 
-- Play **multiplayer maps** from MW2: Afghan, Derail, Estate, Favela, Highrise, Invasion,
-  Karachi, Quarry, Rundown, Rust, Scrapyard, Skidrow, Sub Base, Terminal, Underpass,
-  Wasteland.
-- **Bots**: add bots, freeze them, make them fire, place a still target.
-- **Game modes** from the original rule set (search and destroy, domination, and so on).
-- **Final killcam**, the original HUD and scorebars, killstreaks and perks.
-- **Touch controls** (thumbstick, fire/aim/jump/crouch/reload) or a **Bluetooth/USB
-  controller**.
-- **LAN and online play**: one phone hosts, others join from the LAN tab, Android and
-  iPhone together.
-- A **mod menu** on the phone itself: unlock everything, set prestige, pick a map, add bots,
-  change graphics, trickshot tools and more.
-- **Settings and profile** that survive restarts.
+| | |
+|---|---|
+| **Real MW2 multiplayer** | 16 maps (Afghan, Derail, Estate, Favela, Highrise, Invasion, Karachi, Quarry, Rundown, Rust, Scrapyard, Skidrow, Sub Base, Terminal, Underpass, Wasteland), the original weapons, perks, killstreaks, HUD, scorebars and final killcam. |
+| **Built for phones** | Touch controls with an on-screen pad, plus full **Bluetooth / USB controller** support with rumble. Draws under the camera cutout and respects the safe area. |
+| **Play with friends** | **LAN and online**: one phone hosts, the others join from the LAN tab or by IP. **Android and iPhone can play in the same match.** |
+| **Bots** | Add 1 or 5 bots, still bots, freeze them, make them fire. Good for practice and 1v1 setups. |
+| **Mod menu on the phone** | Tap **MENU** (or three-finger tap, or the controller's home button) for tabs: **LAN, TRICKSHOT, SKINS, MATCH, BOTS, MAPS, ACCOUNT, GRAPHICS**. |
+| **Progression** | Unlock everything in one tap, set prestige 0-10, or reset. Your profile and settings are saved between launches. |
+| **Weapon skins** | Paint your gun from the SKINS tab. |
+| **Trickshot toolkit** | Noclip, god mode, save / load a position, spawn at the saved spot, still bot, "next kill wins" final killcam, trickshot search and destroy, 1 HP, ammo refill. Controller shortcut: **hold Select, D-pad left saves, D-pad right loads**. |
+| **Performance controls** | Held to **60 fps** by default to stay cool in long sessions; **UNCAP FPS** for strong phones. Render resolution and texture quality settings for weaker ones. |
+| **Helpful errors** | If the Android app cannot start it shows what went wrong (game files found?, saved error, device) with Copy / Share buttons, instead of a black screen. |
+| **Open source** | Rust and Bevy, Apache 2.0, source for both ports in this repo. |
 
 Gameplay is still incomplete: expect missing behaviour, bugs and the occasional desync.
 
@@ -55,7 +55,7 @@ The mod menu's **TRICKSHOT** tab gives you noclip, god mode, saving and loading 
 respawning at the saved spot, a still bot to shoot, "next kill wins" for a final killcam,
 a trickshot search and destroy setup, 1 HP and ammo refill.
 
-With a controller, turn on **SELECT+DPAD TP**: hold **Select** and press **D-pad left** to
+With a controller, turn on **PAD SAVE/LOAD**: hold **Select** and press **D-pad left** to
 **save** your position, **D-pad right** to **load** it. The sticks and every other button
 stay as normal (sprint is still the stick click). While it is on, Select is used only for
 this.
