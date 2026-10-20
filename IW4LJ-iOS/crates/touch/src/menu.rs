@@ -662,24 +662,17 @@ pub(crate) fn spawn(mut commands: Commands, mut menu: ResMut<ModMenu>) {
                 Pickable::IGNORE,
             ))
             .id();
+        let fit = fit_buttons(tab.items.len());
         for (item_index, item) in tab.items.iter().enumerate() {
             let entity = button_with(
                 &mut commands,
-                if columns(tab_index) > MENU_COLUMNS {
-                    Node {
-                        width: Val::Percent(15.2),
-                        height: Val::Vh(7.6),
-                        ..default()
-                    }
-                } else {
-                    Node {
-                        width: Val::Percent(23.4),
-                        height: Val::Vh(11.0),
-                        ..default()
-                    }
+                Node {
+                    width: Val::Percent(fit.width),
+                    height: Val::Vh(fit.height),
+                    ..default()
                 },
                 item.label,
-                if columns(tab_index) > MENU_COLUMNS { 2.3 } else { 2.9 },
+                fit.text,
                 small_print(item.act),
             );
             menu.targets.push((entity, Target::Item(tab_index, item_index)));
@@ -933,12 +926,50 @@ pub(crate) fn pad_menu(
     }
 }
 
-/// How many controls a row of a menu page holds.
-const MENU_COLUMNS: usize = 4;
+/// How a tab's buttons are laid out: columns, and each button's size.
+struct Fit {
+    columns: usize,
+    /// Button width, in percent of the page.
+    width: f32,
+    /// Button height, in vh.
+    height: f32,
+    /// Label size.
+    text: f32,
+}
 
-/// A long tab (the skins) is laid out in more, smaller buttons.
+/// The room a page's buttons have, and the most a button may grow to: a tab
+/// with few buttons gets comfortable ones, not huge ones.
+const BODY_VH: f32 = 54.0;
+const ROW_GAP_VH: f32 = 1.8;
+const MAX_HEIGHT_VH: f32 = 12.0;
+const MAX_WIDTH_PCT: f32 = 25.0;
+
+/// Pick the column count (three to six) that makes the buttons largest, so the
+/// page is filled by however many buttons a tab has.
+fn fit_buttons(count: usize) -> Fit {
+    let mut best = Fit { columns: 4, width: 23.4, height: 11.0, text: 2.9 };
+    let mut best_score = -1.0_f32;
+    for columns in 3..=6usize {
+        let rows = count.div_ceil(columns).max(1);
+        let height = ((BODY_VH - (rows - 1) as f32 * ROW_GAP_VH) / rows as f32).min(MAX_HEIGHT_VH);
+        let width = ((97.0 - (columns - 1) as f32) / columns as f32).min(MAX_WIDTH_PCT);
+        // About 2.1 vh to one percent of the width on a phone held sideways.
+        let score = height * width * 2.1;
+        if score > best_score {
+            best_score = score;
+            best = Fit {
+                columns,
+                width,
+                height,
+                text: (2.3 + (height - 7.6) * 0.6 / 3.4).clamp(2.1, 3.1),
+            };
+        }
+    }
+    best
+}
+
 fn columns(tab: usize) -> usize {
-    if TABS[tab].items.len() > 12 { 6 } else { MENU_COLUMNS }
+    fit_buttons(TABS[tab].items.len()).columns
 }
 
 /// Send the graphics preset to the game: when it is chosen, and again each
