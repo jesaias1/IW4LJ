@@ -61,7 +61,10 @@ const PRESETS: [&str; 3] = [
     // Performance.
     "sm_enable 0; sm_sunEnable 0; r_dof_enable 0; r_glow 0; r_distortion 0",
 ];
-const PRESET_DEFAULT: i32 = 2;
+/// A phone starts on Performance; a PC on Quality.
+const PRESET_DEFAULT: i32 = if cfg!(any(target_os = "android", target_os = "ios")) { 2 } else { 0 };
+/// The frame rate a phone is held to unless told otherwise; a PC is not held.
+const FPS_CAP_DEFAULT: i32 = if cfg!(any(target_os = "android", target_os = "ios")) { 60 } else { 0 };
 
 #[derive(Clone, Copy)]
 enum Act {
@@ -182,7 +185,7 @@ const TABS: [Tab; 8] = [
             line("BOT HERE", "stillbot"),
             line("NEXT KILL WINS", "lastkill"),
             line("TRICKSHOT S&D", "trickshot"),
-            line("1 HP", "damage 99"),
+            line("BOTS TO 1 HP", "bothp 1"),
             line("REFILL AMMO", "give ammo"),
             line("RESPAWN", "kill"),
         ],
@@ -388,6 +391,7 @@ const TABS: [Tab; 8] = [
             set("FPS 60", Setting::FpsCap, 60),
             set("FPS 90", Setting::FpsCap, 90),
             set("FPS 120", Setting::FpsCap, 120),
+            set("FPS UNCAPPED", Setting::FpsCap, 0),
             set("RENDER AUTO", Setting::RenderHeight, -1),
             set("RENDER 540P", Setting::RenderHeight, 540),
             set("RENDER 720P", Setting::RenderHeight, 720),
@@ -616,8 +620,8 @@ pub(crate) fn spawn(mut commands: Commands, mut menu: ResMut<ModMenu>) {
     };
     menu.show_fps = read_setting(Setting::ShowFps) == 1;
     menu.fps_cap = match read_setting(Setting::FpsCap) {
-        fps @ (60 | 90 | 120) => fps,
-        _ => 60,
+        fps @ (0 | 60 | 90 | 120) => fps,
+        _ => FPS_CAP_DEFAULT,
     };
     crate::frame_cap::set_cap(menu.fps_cap as u32);
 
@@ -839,6 +843,53 @@ pub(crate) fn touch(
         menu.pad_used = false;
         menu.tapped = Some((entity, time.elapsed_secs() + 0.18));
         run(&mut menu, target, &mut queue, time.elapsed_secs());
+    }
+}
+
+/// On a PC: F1 or Insert opens and closes the menu, Escape closes it, and a click
+/// is a tap on the control under the pointer. The pointer is let go while the
+/// menu is up, so the mouse that turns the view can also press a button.
+pub(crate) fn desktop_input(
+    keys: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<(Entity, &Window), With<PrimaryWindow>>,
+    mut menu: ResMut<ModMenu>,
+    mut touches: MessageWriter<TouchInput>,
+    screen: Option<Res<frame::AppScreen>>,
+    authority: Option<Res<net::AuthorityWorld>>,
+    mut free: ResMut<frame::UiPointerFree>,
+    mut mod_open: ResMut<frame::ModMenuOpen>,
+    mut was_open: Local<bool>,
+) {
+    let allowed = crate::menu_allowed(screen.as_deref(), authority.as_deref());
+    if !allowed {
+        menu.open = false;
+    } else if keys.just_pressed(KeyCode::F1) || keys.just_pressed(KeyCode::Insert) {
+        menu.open = !menu.open;
+        menu.pad_used = false;
+        menu.focus = 0;
+    } else if menu.open && keys.just_pressed(KeyCode::Escape) {
+        menu.open = false;
+    }
+    if menu.open != mod_open.0 {
+        mod_open.0 = menu.open;
+    }
+    if menu.open != *was_open {
+        *was_open = menu.open;
+        free.0 = menu.open;
+    }
+    if menu.open
+        && mouse.just_pressed(MouseButton::Left)
+        && let Ok((window, win)) = windows.single()
+        && let Some(position) = win.cursor_position()
+    {
+        touches.write(TouchInput {
+            phase: TouchPhase::Started,
+            position,
+            window,
+            force: None,
+            id: 0,
+        });
     }
 }
 

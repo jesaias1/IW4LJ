@@ -106,6 +106,9 @@ pub(crate) fn restart_level(world: &mut World, tick: crate::Tick) {
         .get(&1)
         .into_iter()
         .flatten()
+        // A restart that keeps nothing starts the match over: the game's own
+        // state (such as "the game has ended") must not carry across it.
+        .filter(|_| persist)
         .filter_map(|(id, value)| Some((symbol_name(runtime, *id)?, detach(runtime, value, 0)?)))
         .collect();
     let pers: BTreeMap<u32, Detached> = runtime

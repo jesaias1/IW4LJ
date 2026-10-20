@@ -53,6 +53,10 @@ pub fn add_runtime_plugins_with_role(app: &mut App, role: RuntimeRole) {
     #[cfg(target_os = "android")]
     app.add_plugins(touch::TouchPlugin);
 
+    // A PC gets the same mod menu, opened with F1 and clicked with the mouse.
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    app.add_plugins(touch::DesktopMenuPlugin);
+
     if single_threaded_schedules() {
         // On a phone (Snapdragon 8 Gen 2) the parallel executor spends about a
         // tenth of all CPU time waking workers for systems that each run for

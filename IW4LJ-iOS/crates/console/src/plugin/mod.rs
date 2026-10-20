@@ -211,6 +211,8 @@ impl Plugin for ConsolePlugin {
                             crate::debug_move::route_debug_move_commands,
                             crate::saved_position::route_saved_position_commands,
                             crate::trickshot::route_trickshot_commands,
+                            crate::trickshot::restore_looped_bot,
+                            crate::trickshot::auto_spawn_in_loop,
                         ),
                         crate::debug_script_mover::route_debug_script_mover_commands,
                         crate::debug_draw_method::route_debug_draw_method_commands,

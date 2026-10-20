@@ -211,6 +211,15 @@ impl SimWorld {
         crate::script::host::natives::iw4::register_local_presentation_dvars(&mut self.ecs, local);
     }
 
+    /// A script dvar's current value, if it has one.
+    pub fn gsc_dvar(&self, name: &str) -> Option<String> {
+        self.ecs
+            .get_resource::<crate::script::MatchScript>()?
+            .dvars
+            .get(&name.to_ascii_lowercase())
+            .cloned()
+    }
+
     pub fn set_gsc_dvar(&mut self, name: &str, value: &str) {
         crate::script::set_dvar(&mut self.ecs, name, value);
     }

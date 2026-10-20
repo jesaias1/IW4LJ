@@ -474,9 +474,18 @@ fn run_exit_level(
     mut transition: ResMut<SessionSwapRequest>,
     mut trickshot: Option<ResMut<frame::TrickshotLoop>>,
     manifest: Option<Res<SessionContentManifest>>,
+    mut last_loop: Local<Option<std::time::Instant>>,
 ) {
     if called.read().next().is_none() {
         return;
+    }
+    // A loop whose match ends the moment it starts would reload forever.
+    if let Some(trickshot) = trickshot.as_deref_mut()
+        && trickshot.active
+        && last_loop.is_some_and(|at| at.elapsed() < std::time::Duration::from_secs(15))
+    {
+        trickshot.active = false;
+        diag::info!(Sim, "session: trickshot loop stopped: the match ended as soon as it began");
     }
     // A trickshot loop plays the same map again rather than leaving for the
     // lobby: the next attempt is a killcam away.
@@ -488,6 +497,7 @@ fn run_exit_level(
     {
         match transition.request_zone(zone.clone()) {
             Ok(id) => {
+                *last_loop = Some(std::time::Instant::now());
                 trickshot.rearm = true;
                 diag::info!(Sim, "session: trickshot loop → `{zone}` again (swap #{id})");
                 return;
