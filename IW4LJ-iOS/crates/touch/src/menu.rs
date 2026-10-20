@@ -82,6 +82,8 @@ enum Act {
     Lan(Lan),
     /// Paint the current gun with a skin (`-1` puts the normal one back).
     Skin(i32),
+    /// Start the match again the way the last one was set up: its map and bots.
+    QuickStart,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -305,8 +307,12 @@ const TABS: [Tab; 8] = [
     },
     Tab {
         name: "MATCH",
-        hint: "Start a private match from the main menu, then control it from here.",
+        hint: "QUICK START plays your last map with the bots you last added, in one tap. Or start a private match from the main menu and control it from here.",
         items: &[
+            Item {
+                label: "QUICK START",
+                act: Act::QuickStart,
+            },
             line("START MATCH", "force_match_start"),
             line("SPAWN", "spawn 0"),
             line("RESTART MAP", "map_restart"),
@@ -446,6 +452,62 @@ pub(crate) struct ModMenu {
     tapped: Option<(Entity, f32)>,
 }
 
+/// The map and bot count the last match was set up with, kept for QUICK START.
+fn quick_path() -> Option<std::path::PathBuf> {
+    std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join("quick_start.txt"))
+}
+
+fn read_quick() -> (String, u32) {
+    let text = quick_path()
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .unwrap_or_default();
+    let mut map = "mp_terminal".to_owned();
+    let mut bots = 3;
+    for line in text.lines() {
+        if let Some(name) = line.strip_prefix("map ") {
+            let name = name.trim();
+            if name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') && !name.is_empty() {
+                map = name.to_owned();
+            }
+        } else if let Some(count) = line.strip_prefix("bots ") {
+            bots = count.trim().parse().unwrap_or(bots).min(18);
+        }
+    }
+    (map, bots)
+}
+
+fn write_quick(map: &str, bots: u32) {
+    if let Some(path) = quick_path()
+        && let Err(error) = std::fs::write(&path, format!("map {map}
+bots {bots}
+"))
+    {
+        diag::warn!(Launch, "mod menu: {}: {error}", path.display());
+    }
+}
+
+/// Note a menu line that sets the match up: choosing a map starts the bot count
+/// over, and each bot added counts.
+fn remember_setup(line: &str) {
+    if let Some(map) = line.strip_prefix("map ") {
+        write_quick(map.trim(), 0);
+    } else if let Some(count) = line.strip_prefix("bot add ") {
+        let (map, bots) = read_quick();
+        let added = count.trim().parse::<u32>().unwrap_or(0);
+        write_quick(&map, (bots + added).min(18));
+    }
+}
+
+/// The console script that starts the remembered match.
+fn quick_start_script() -> String {
+    let (map, bots) = read_quick();
+    let mut script = format!("map {map}; wait world; spawn 0; force_match_start");
+    if bots > 0 {
+        script.push_str(&format!("; bot add {bots}"));
+    }
+    script
+}
+
 fn setting_path(setting: Setting) -> Option<std::path::PathBuf> {
     std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(setting.file()))
 }
@@ -497,6 +559,7 @@ fn small_print(act: Act) -> &'static str {
     match act {
         Act::Lan(Lan::HostOnline) => "may need port forwarding (UDP 28960)",
         Act::Prompt(kind) if kind == crate::bridge::PROMPT_HOST_IP => "friend's IP, or IP:port",
+        Act::QuickStart => "last map and bots",
         _ => "",
     }
 }
@@ -788,7 +851,11 @@ fn run(menu: &mut ModMenu, target: Target, queue: &mut ConsoleQueue, now: f32) {
             menu.focus = 0;
         }
         Target::Item(tab, item) => match TABS[tab].items[item].act {
-            Act::Line(line) => queue.push_line(line),
+            Act::Line(line) => {
+                remember_setup(line);
+                queue.push_line(line);
+            }
+            Act::QuickStart => queue.push_line(&quick_start_script()),
             Act::Toggle { slot, on, off } => {
                 menu.toggles[slot] = !menu.toggles[slot];
                 if slot == TP_SLOT {
@@ -1112,7 +1179,7 @@ pub(crate) fn update(
             Target::Tab(tab) => tab == menu.tab,
             Target::Close => false,
             Target::Item(tab, item) => match TABS[tab].items[item].act {
-                Act::Line(_) | Act::Prompt(_) => false,
+                Act::Line(_) | Act::Prompt(_) | Act::QuickStart => false,
                 Act::Lan(Lan::Host | Lan::HostOnline) => lan_status == lan::Status::Hosting,
                 Act::Lan(Lan::Join) => {
                     matches!(lan_status, lan::Status::Searching | lan::Status::Joined(_))
