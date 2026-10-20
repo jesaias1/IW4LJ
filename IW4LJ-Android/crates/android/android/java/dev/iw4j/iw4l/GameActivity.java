@@ -266,10 +266,16 @@ public class GameActivity extends NativeActivity implements InputManager.InputDe
         handler.post(promptPoll);
         rumbleHandler.removeCallbacks(rumblePoll);
         rumbleHandler.post(rumblePoll);
+        // A start that is still alive after this long did not die on the way in.
+        handler.removeCallbacks(startedOk);
+        handler.postDelayed(startedOk, 15000);
     }
+
+    private final Runnable startedOk = () -> LaunchActivity.writeState(this, "ok");
 
     @Override
     protected void onPause() {
+        handler.removeCallbacks(startedOk);
         handler.removeCallbacks(promptPoll);
         rumbleHandler.removeCallbacks(rumblePoll);
         releasePads();
