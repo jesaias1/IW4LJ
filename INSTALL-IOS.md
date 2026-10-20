@@ -54,8 +54,8 @@ put your `mw2` folder (containing `zone/` and `main/`) into it:
 - On-screen controls are the same as on Android; **MENU** or a **three-finger
   tap** opens the mod menu (unlock all, bots, maps, skins, trickshot, graphics,
   LAN). Bluetooth controllers (Xbox, PlayStation, MFi) work once paired in Settings.
-- **Graphics tab:** the game is held to 60 fps to keep the phone cool; **UNCAP
-  FPS** lifts it. If the phone gets very hot iOS makes the game slow down anyway.
+- **Graphics tab:** the game is held to 60 fps to keep the phone cool; **FPS 90** and
+  **FPS 120** raise it. If the phone gets very hot iOS makes the game slow down anyway.
 - **LAN / online, crossplay with Android:** mod menu → **LAN** → *Host* or *Join*.
   iOS asks once to allow **Local Network** — say yes. If the host isn't found, use
   *Join by IP*. Both players must be on builds from the same revision of this

@@ -43,7 +43,7 @@ server error; the install guide has a fix list.
 | **Progression** | Unlock everything in one tap, set prestige 0-10, or reset. Your profile and settings are saved between launches. |
 | **Weapon skins** | Paint your gun from the SKINS tab. |
 | **Trickshot toolkit** | Noclip, god mode, **explosive bullets** (every shot also bursts where it lands, so you don't need a perfect hit), save / load a position, spawn at the saved spot, still bot, "next kill wins" final killcam, trickshot search and destroy, 1 HP, ammo refill. Controller shortcut: **hold Select, D-pad left saves, D-pad right loads**. |
-| **Performance controls** | Held to **60 fps** by default to stay cool in long sessions; **UNCAP FPS** for strong phones. Render resolution and texture quality settings for weaker ones. |
+| **Performance controls** | Held to **60 fps** by default to stay cool in long sessions; **FPS 90 / FPS 120** buttons for strong phones. Render resolution and texture quality settings for weaker ones. |
 | **Helpful errors** | If the Android app cannot start it shows what went wrong (game files found?, saved error, device) with Copy / Share buttons, instead of a black screen. |
 | **Open source** | Rust and Bevy, Apache 2.0, source for both ports in this repo. |
 
@@ -73,7 +73,7 @@ this.
 ### Performance
 
 - The game is held to **60 fps** by default to keep the phone cool over long sessions.
-  Strong phones can press **UNCAP FPS** in the mod menu's **GRAPHICS** tab.
+  Strong phones can pick **FPS 90** or **FPS 120** in the mod menu's **GRAPHICS** tab.
 - **Render resolution** and **texture quality** are also in **GRAPHICS** and apply at the
   next launch. Lower them on phones that struggle.
 - 6 GB of RAM or more is recommended. Long sessions on some phones dip below 60 fps.

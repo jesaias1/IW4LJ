@@ -26,8 +26,8 @@ pub(crate) enum Setting {
     Preset,
     /// The frame-rate readout.
     ShowFps,
-    /// Whether the 60 fps cap is lifted.
-    UncapFps,
+    /// The frame rate to hold: 60, 90 or 120.
+    FpsCap,
     /// The skin on the gun, kept between matches and launches.
     Skin,
 }
@@ -39,7 +39,7 @@ impl Setting {
             Self::TextureSkip => "texture_skip.txt",
             Self::Preset => "graphics_preset.txt",
             Self::ShowFps => "show_fps.txt",
-            Self::UncapFps => "uncap_fps.txt",
+            Self::FpsCap => "fps_cap.txt",
             Self::Skin => "skin.txt",
         }
     }
@@ -372,15 +372,16 @@ const TABS: [Tab; 8] = [
     },
     Tab {
         name: "GRAPHICS",
-        hint: "Performance holds the frame rate and keeps the phone cool. The game is held to 60 fps so it stays cool in a long session; UNCAP FPS lifts that for phones that can take it. Render and texture settings apply the next time the game starts.",
+        hint: "Performance holds the frame rate and keeps the phone cool. The game is held to 60 fps so it stays cool in a long session; FPS 90 and FPS 120 are for phones that can sustain more. Render and texture settings apply the next time the game starts.",
         items: &[
             set("PERFORMANCE", Setting::Preset, 2),
             set("BALANCED", Setting::Preset, 1),
             set("QUALITY", Setting::Preset, 0),
             set("SHOW FPS", Setting::ShowFps, 1),
             set("HIDE FPS", Setting::ShowFps, 0),
-            set("CAP FPS 60", Setting::UncapFps, 0),
-            set("UNCAP FPS", Setting::UncapFps, 1),
+            set("FPS 60", Setting::FpsCap, 60),
+            set("FPS 90", Setting::FpsCap, 90),
+            set("FPS 120", Setting::FpsCap, 120),
             set("RENDER AUTO", Setting::RenderHeight, -1),
             set("RENDER 540P", Setting::RenderHeight, 540),
             set("RENDER 720P", Setting::RenderHeight, 720),
@@ -425,7 +426,7 @@ pub(crate) struct ModMenu {
     /// Set when the preset has to be sent to the game (again).
     preset_due: bool,
     show_fps: bool,
-    uncap_fps: bool,
+    fps_cap: i32,
     fps: Option<Entity>,
     /// The control a controller has selected, as an index into the open tab.
     focus: usize,
@@ -551,8 +552,11 @@ pub(crate) fn spawn(mut commands: Commands, mut menu: ResMut<ModMenu>) {
         _ => PRESET_DEFAULT,
     };
     menu.show_fps = read_setting(Setting::ShowFps) == 1;
-    menu.uncap_fps = read_setting(Setting::UncapFps) == 1;
-    crate::frame_cap::set_uncapped(menu.uncap_fps);
+    menu.fps_cap = match read_setting(Setting::FpsCap) {
+        fps @ (60 | 90 | 120) => fps,
+        _ => 60,
+    };
+    crate::frame_cap::set_cap(menu.fps_cap as u32);
 
     // The frame-rate readout: small, under the button row, out of the way.
     let fps = commands
@@ -832,9 +836,9 @@ fn run(menu: &mut ModMenu, target: Target, queue: &mut ConsoleQueue, now: f32) {
                         menu.preset_due = true;
                     }
                     Setting::ShowFps => menu.show_fps = value == 1,
-                    Setting::UncapFps => {
-                        menu.uncap_fps = value == 1;
-                        crate::frame_cap::set_uncapped(menu.uncap_fps);
+                    Setting::FpsCap => {
+                        menu.fps_cap = value;
+                        crate::frame_cap::set_cap(value as u32);
                     }
                     // Skins are set by their own action, not by this one.
                     Setting::Skin => {}
@@ -1090,7 +1094,7 @@ pub(crate) fn update(
                 Act::Set(Setting::TextureSkip, value) => value == menu.texture_skip,
                 Act::Set(Setting::Preset, value) => value == menu.preset,
                 Act::Set(Setting::ShowFps, value) => (value == 1) == menu.show_fps,
-                Act::Set(Setting::UncapFps, value) => (value == 1) == menu.uncap_fps,
+                Act::Set(Setting::FpsCap, value) => value == menu.fps_cap,
             },
         };
         let focused = menu.pad_used
