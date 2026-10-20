@@ -99,6 +99,9 @@ fn main() {
                 if let Some((name, value)) = line.split_once('=')
                     && !name.trim().is_empty()
                     && !name.trim_start().starts_with('#')
+                    // A development test once left this line on a phone, and the
+                    // file could not be removed from inside the app.
+                    && !value.contains("give weapon/iw4:weapon/uzi_mp akimbo")
                 {
                     std::env::set_var(name.trim(), value.trim());
                 }
@@ -121,6 +124,8 @@ fn main() {
                 .into_iter()
                 .find_map(|base| std::fs::read_to_string(base.join("cmds.txt")).ok())
                 .filter(|text| !text.trim().is_empty())
+                // The same test's startup script (see above).
+                .filter(|text| !text.contains("map mp_terminal; wait world; spawn 0; force_match_start; bot add 1"))
                 .unwrap_or_else(|| "wait progression; unlock all".to_owned());
             std::env::set_var("IW4L_CMDS", script);
         }
