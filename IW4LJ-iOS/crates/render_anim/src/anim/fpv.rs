@@ -443,6 +443,12 @@ pub fn tick_equipped_fpv_with_extra_events(
         .or(present.last_ads_frac)
         .unwrap_or(0.0);
     equipped.controller.apply_ads_overlay_frame(ads_frac);
+    // The left hand is only watched while an akimbo pair is held. Forget what
+    // it last saw otherwise, or a stale value that equals the next raise makes
+    // that raise look like no change, and the left gun is simply already up.
+    if sample.is_some_and(|sample| sample.last_weapon_hand != 1) {
+        present.last_weap_anim_secondary = None;
+    }
     if let (Some(left), Some(sample)) = (equipped.left.as_mut(), sample) {
         if sample.last_weapon_hand == 1 {
             left.set_predicted_perks(sample.perks0, sample.perks1);
