@@ -7,7 +7,7 @@ folders), and the IW4LJ APK.
 ## 1. Get the APK
 
 Download **`IW4LJ.apk`** (about 125 MB) from the latest release:
-**https://github.com/jesaias1/IW4LJ/releases/latest** — on the phone's browser or
+**https://github.com/jesaias1/IW4LJ/releases/tag/android-v0.2.1** — on the phone's browser or
 on the PC, then copy it across.
 
 *Building it yourself instead:* see

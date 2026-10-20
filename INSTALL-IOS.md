@@ -11,7 +11,7 @@ PC or a Mac, a copy of **Modern Warfare 2 multiplayer** you own (about 12 GB: th
 
 Download **IW4LJ.ipa** from this repository's **Releases** page (right-hand side of
 the repo's main page, then the newest *iOS* release):
-<https://github.com/jesaias1/IW4LJ/releases/latest>
+<https://github.com/jesaias1/IW4LJ/releases/tag/ios-v0.2.0>
 
 The IPA is built by GitHub, so no Mac is needed. If you want a fresher build than
 the release, open the **Actions** tab, then **iOS build**, pick the newest

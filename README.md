@@ -24,7 +24,7 @@ can play together over LAN and online.
 
 | Platform | Download | Install guide | Status |
 |---|---|---|---|
-| **Android** 12+ (arm64) | [**IW4LJ.apk**](https://github.com/jesaias1/IW4LJ/releases/latest) | [INSTALL-ANDROID.md](INSTALL-ANDROID.md) | Playable. Tested on a Galaxy S23. |
+| **Android** 12+ (arm64) | [**IW4LJ.apk**](https://github.com/jesaias1/IW4LJ/releases/download/android-v0.2.1/IW4LJ.apk) | [INSTALL-ANDROID.md](INSTALL-ANDROID.md) | Playable. Tested on a Galaxy S23. |
 | **iPhone / iPad** (iOS 16+) | [**IW4LJ.ipa**](https://github.com/jesaias1/IW4LJ/releases/tag/ios-v0.2.0) (unsigned) | [INSTALL-IOS.md](INSTALL-IOS.md) | **Not yet tested on a device.** Expect rough edges. |
 
 The iPhone build is unsigned: you sign and install it with Sideloadly or AltStore using a
