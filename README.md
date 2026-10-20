@@ -2,7 +2,7 @@
 
 # IW4LJ
 
-**Call of Duty: Modern Warfare 2 (2009) multiplayer on your phone** — Android and iPhone.
+**Call of Duty: Modern Warfare 2 (2009) multiplayer on your phone** — Android and iPhone, and now **Windows PC** with the same mod menu.
 
 IW4LJ is a phone port of **IW4L** (by vladtrc), an open-source runtime for MW2 written in
 Rust with the [Bevy](https://bevy.org/) engine. It is not a wrapper or an emulator: it
@@ -25,6 +25,7 @@ can play together over LAN and online.
 | Platform | Download | Install guide | Status |
 |---|---|---|---|
 | **Android** 12+ (arm64) | [**IW4LJ.apk**](https://github.com/jesaias1/IW4LJ/releases/download/android-v0.2.1/IW4LJ.apk) | [INSTALL-ANDROID.md](INSTALL-ANDROID.md) | Playable. Tested on a Galaxy S23. |
+| **Windows PC** (64-bit) | [**IW4LJ-PC.zip**](https://github.com/jesaias1/IW4LJ/releases/tag/pc-v0.1.0) | [INSTALL-PC.md](INSTALL-PC.md) | **New and experimental.** The same mod menu, opened with F1. |
 | **iPhone / iPad** (iOS 16+) | [**IW4LJ.ipa**](https://github.com/jesaias1/IW4LJ/releases/tag/ios-v0.2.0) (unsigned) | [INSTALL-IOS.md](INSTALL-IOS.md) | **Not yet tested on a device.** Expect rough edges. |
 
 The iPhone build is unsigned: you sign and install it with Sideloadly or AltStore using a
@@ -43,7 +44,7 @@ server error; the install guide has a fix list.
 | **Mod menu on the phone** | Tap **MENU** (or three-finger tap, or the controller's home button) for tabs: **LAN, TRICKSHOT, SKINS, MATCH, BOTS, MAPS, ACCOUNT, GRAPHICS**. |
 | **Progression** | Unlock everything in one tap, set prestige 0-10, or reset. Your profile and settings are saved between launches. |
 | **Weapon skins** | Paint your gun from the SKINS tab. |
-| **Trickshot toolkit** | Noclip, god mode, **explosive bullets** (every shot also bursts where it lands, so you don't need a perfect hit), save / load a position, spawn at the saved spot, still bot, "next kill wins" final killcam, trickshot search and destroy, 1 HP, ammo refill. Controller shortcut: **hold Select, D-pad left saves, D-pad right loads**. |
+| **Trickshot toolkit** | Noclip, god mode, **explosive bullets** (every shot also bursts where it lands, so you don't need a perfect hit), save / load a position, spawn at the saved spot, still bot, **BOTS TO 1 HP** (yours is untouched), "next kill wins" final killcam (the match then restarts in place, no loading screen), trickshot search and destroy, 1 HP, ammo refill. Controller shortcut: **hold Select, D-pad left saves, D-pad right loads**. |
 | **Performance controls** | Held to **60 fps** by default to stay cool in long sessions; **FPS 90 / FPS 120** buttons for strong phones. Render resolution and texture quality settings for weaker ones. |
 | **Helpful errors** | If the Android app cannot start it shows what went wrong (game files found?, saved error, device) with Copy / Share buttons, instead of a black screen. |
 | **Open source** | Rust and Bevy, Apache 2.0, source for both ports in this repo. |

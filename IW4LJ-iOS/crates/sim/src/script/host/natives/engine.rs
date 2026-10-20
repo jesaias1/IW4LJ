@@ -1820,6 +1820,33 @@ fn register_match(registry: &mut NativeRegistry) {
         });
     }
     registry.register(Function, "exitlevel", |world, _, _| {
+        // The trickshot practice loop starts the match again where it stands, so
+        // the next attempt does not wait for a map load. If that cannot be done
+        // (no healthy started match), the level is left as usual.
+        let looping = world
+            .resource::<crate::script::MatchScript>()
+            .dvars
+            .get("iw4l_trickshot_loop")
+            .is_some_and(|value| value.trim() == "1");
+        // A match that ends as soon as it starts (no one to fight) must not
+        // restart forever: it takes at least eight seconds of play to loop.
+        let now = runtime(world)
+            .last_tick
+            .map_or(0, |tick| i64::from(crate::level_time_ms(tick)));
+        let last = world
+            .resource::<crate::script::MatchScript>()
+            .dvars
+            .get("iw4l_loop_at")
+            .and_then(|value| value.trim().parse::<i64>().ok())
+            .unwrap_or(i64::MIN / 2);
+        if looping && now - last >= 8000 && runtime(world).request_round_restart(false).is_ok() {
+            world
+                .resource_mut::<crate::script::MatchScript>()
+                .dvars
+                .insert("iw4l_loop_at".to_owned(), now.to_string());
+            diag::info!(Sim, "trickshot loop: the match starts again in place");
+            return Ok(Value::Undefined);
+        }
         let mut state = runtime(world);
         if std::mem::replace(&mut state.finished, true) {
             return Err("exitlevel already called".into());

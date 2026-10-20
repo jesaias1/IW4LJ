@@ -182,7 +182,7 @@ const TABS: [Tab; 8] = [
             line("BOT HERE", "stillbot"),
             line("NEXT KILL WINS", "lastkill"),
             line("TRICKSHOT S&D", "trickshot"),
-            line("1 HP", "damage 99"),
+            line("BOTS TO 1 HP", "bothp 1"),
             line("REFILL AMMO", "give ammo"),
             line("RESPAWN", "kill"),
         ],

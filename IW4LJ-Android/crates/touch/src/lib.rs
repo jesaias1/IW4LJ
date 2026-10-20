@@ -234,6 +234,35 @@ struct VirtualPad {
     gesture_latched: bool,
 }
 
+/// The mod menu on a PC: the same menu a phone has, opened with F1 (or a
+/// controller's home button) and clicked with the mouse. There is no on-screen
+/// pad, and the frame rate is not held unless the menu says so.
+pub struct DesktopMenuPlugin;
+
+impl Plugin for DesktopMenuPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<menu::ModMenu>()
+            .add_systems(Startup, (menu::spawn, killcam_bars::spawn))
+            .add_systems(
+                Update,
+                (
+                    menu::update,
+                    menu::apply_preset,
+                    menu::pad_menu,
+                    menu::drive_lan,
+                    menu::fps_readout,
+                    killcam_bars::update,
+                    skins::paint,
+                ),
+            )
+            .add_systems(Last, frame_cap::limit)
+            .add_systems(
+                PreUpdate,
+                (menu::desktop_input, menu::touch).chain().after(InputSystems),
+            );
+    }
+}
+
 pub struct TouchPlugin;
 
 impl Plugin for TouchPlugin {
