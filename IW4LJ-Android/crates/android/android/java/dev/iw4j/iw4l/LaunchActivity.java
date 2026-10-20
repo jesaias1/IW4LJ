@@ -51,9 +51,32 @@ public class LaunchActivity extends Activity {
         }
     }
 
+    /**
+     * Two files from a development test run were left beside the game on one
+     * phone: a script that opened a Terminal match on every launch, and an
+     * environment line that handed out an akimbo Uzi. They are removed when
+     * their contents are exactly the test's; any other file is left alone.
+     */
+    private void removeTestLeftovers() {
+        File[] media = getExternalMediaDirs();
+        if (media.length == 0 || media[0] == null) {
+            return;
+        }
+        File cmds = new File(media[0], "cmds.txt");
+        if (readFile(cmds).equals(
+            "wait progression; unlock all; map mp_terminal; wait world; spawn 0; force_match_start; bot add 1")) {
+            cmds.delete();
+        }
+        File env = new File(media[0], "env.txt");
+        if (readFile(env).contains("IW4L_LATE_CMDS=give weapon/iw4:weapon/uzi_mp akimbo")) {
+            env.delete();
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        removeTestLeftovers();
         boolean crashed = readFile(new File(getFilesDir(), STATE_FILE)).equals("starting");
         if (!crashed) {
             startGame();
