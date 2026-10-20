@@ -38,6 +38,7 @@ server error; the install guide has a fix list.
 | **Real MW2 multiplayer** | 16 maps (Afghan, Derail, Estate, Favela, Highrise, Invasion, Karachi, Quarry, Rundown, Rust, Scrapyard, Skidrow, Sub Base, Terminal, Underpass, Wasteland), the original weapons, perks, killstreaks, HUD, scorebars and final killcam. |
 | **Built for phones** | Touch controls with an on-screen pad, plus full **Bluetooth / USB controller** support with rumble. Draws under the camera cutout and respects the safe area. |
 | **Play with friends** | **LAN and online**: one phone hosts, the others join from the LAN tab or by IP. **Android and iPhone can play in the same match.** |
+| **Quick start** | One tap in the **MATCH** tab restarts your last map with the bots you last added, so you are back in a match in seconds. |
 | **Bots** | Add 1 or 5 bots, still bots, freeze them, make them fire. Good for practice and 1v1 setups. |
 | **Mod menu on the phone** | Tap **MENU** (or three-finger tap, or the controller's home button) for tabs: **LAN, TRICKSHOT, SKINS, MATCH, BOTS, MAPS, ACCOUNT, GRAPHICS**. |
 | **Progression** | Unlock everything in one tap, set prestige 0-10, or reset. Your profile and settings are saved between launches. |
