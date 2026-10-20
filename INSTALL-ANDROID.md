@@ -51,7 +51,7 @@ uses whichever already holds `zone/`. `mw2/zone/english/common_mp.ff` must exist
 - A Bluetooth or USB controller works as well; its Xbox/PlayStation button opens
   the mod menu.
 - **Graphics tab:** the game is held to 60 fps to keep the phone cool. Phones that
-  can take more can press **UNCAP FPS**. Render resolution and texture quality
+  can take more can pick **FPS 90** or **FPS 120**. Render resolution and texture quality
   apply at the next launch.
 
 ### LAN and online (Android ⇄ Android, Android ⇄ iPhone)

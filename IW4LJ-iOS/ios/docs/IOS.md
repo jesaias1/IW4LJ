@@ -89,7 +89,7 @@ netcode or the game content on one side only breaks the match. See
   notch (`touch/src/safe_area.rs`, fed once a second by `platform.rs`). The
   game's own HUD already sits inside the engine's 85 % safe area.
 - **Thermal**: when iOS reports a *serious* thermal state the 60 fps cap is held
-  even if uncapped; at *critical* the game drops to 30 fps
+  even if 90 or 120 is chosen; at *critical* the game drops to 30 fps
   (`touch/src/frame_cap.rs`, iOS only).
 - **Memory**: the texture tier follows `os_proc_available_memory()` (what iOS
   will still let the app use), not the phone's RAM; a memory warning is written
@@ -105,5 +105,5 @@ netcode or the game content on one side only breaks the match. See
 2. Audio interruptions rely on the audio supervisor noticing the stalled stream.
 3. The mod menu has no iOS-specific entries.
 
-Done: the 60 fps cap with an "Uncap FPS" button in the Graphics tab (both ports,
+Done: the 60 fps cap with FPS 60 / 90 / 120 buttons in the Graphics tab (both ports,
 see [PORTS.md](PORTS.md)).

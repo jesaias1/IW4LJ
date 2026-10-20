@@ -30,6 +30,6 @@ or compare the whole crates folders with any diff tool, ignoring the files above
 
 - **FPS cap**: the game is held to 60 fps by default (`crates/touch/src/frame_cap.rs`,
   a sleep at the end of the main frame) to keep phones cool in long sessions.
-  The mod menu's Graphics tab has `CAP FPS 60` / `UNCAP FPS` (saved in
-  `uncap_fps.txt`, applied at once). `IW4L_FPS_CAP=<n>` in `env.txt` changes the
+  The mod menu's Graphics tab has `FPS 60` / `FPS 90` / `FPS 120` (saved in
+  `fps_cap.txt`, applied at once). `IW4L_FPS_CAP=<n>` in `env.txt` changes the
   rate; `0` removes the cap. Applied to both projects on 2026-10-13.
