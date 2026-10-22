@@ -28,8 +28,9 @@ can play together over LAN and online.
 | **Windows PC** (64-bit) | [**IW4LJ-PC.zip**](https://github.com/jesaias1/IW4LJ/releases/tag/pc-v0.1.0) | [INSTALL-PC.md](INSTALL-PC.md) | **New and experimental.** The same mod menu, opened with F1. |
 | **iPhone / iPad** (iOS 16+) | [**IW4LJ.ipa**](https://github.com/jesaias1/IW4LJ/releases/tag/ios-v0.2.0) (unsigned) | [INSTALL-IOS.md](INSTALL-IOS.md) | **Not yet tested on a device.** Expect rough edges. |
 
-The iPhone build is unsigned: you sign and install it with Sideloadly or AltStore using a
-free Apple ID (it must be re-signed every 7 days). Sign-in sometimes fails with an Apple
+The iPhone build is unsigned: you sign and install it with **SideStore** (recommended: it refreshes
+itself in the background) or Sideloadly, using a free Apple ID. In SideStore add the source
+`https://raw.githubusercontent.com/jesaias1/IW4LJ/main/altstore/source.json`. Sign-in sometimes fails with an Apple
 server error; the install guide has a fix list.
 
 ## Features
