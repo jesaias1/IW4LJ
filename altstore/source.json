@@ -1,0 +1,47 @@
+{
+  "name": "IW4LJ",
+  "identifier": "dev.iw4j.iw4l.source",
+  "subtitle": "MW2 on iPhone and Android",
+  "description": "The IW4LJ phone port of IW4L.",
+  "iconURL": "https://raw.githubusercontent.com/jesaias1/IW4LJ/main/IW4LJ-iOS/ios/app/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+  "website": "https://github.com/jesaias1/IW4LJ",
+  "tintColor": "FF5A00",
+  "apps": [
+    {
+      "name": "IW4LJ",
+      "bundleIdentifier": "dev.iw4j.iw4l",
+      "developerName": "jesaias1",
+      "subtitle": "MW2 multiplayer on iPhone",
+      "localizedDescription": "Call of Duty: Modern Warfare 2 (2009) multiplayer on your iPhone. You need your own copy of MW2 multiplayer files; none are included. Touch and controller support, a mod menu with trickshot tools, bots and LAN play with Android and iPhone.",
+      "iconURL": "https://raw.githubusercontent.com/jesaias1/IW4LJ/main/IW4LJ-iOS/ios/app/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+      "tintColor": "FF5A00",
+      "screenshotURLs": [
+        "https://raw.githubusercontent.com/jesaias1/IW4LJ/main/screenshots/terminal-sniper.jpg",
+        "https://raw.githubusercontent.com/jesaias1/IW4LJ/main/screenshots/tanker-explosion.jpg",
+        "https://raw.githubusercontent.com/jesaias1/IW4LJ/main/screenshots/industrial-daylight.jpg",
+        "https://raw.githubusercontent.com/jesaias1/IW4LJ/main/screenshots/jungle-crossbow.jpg"
+      ],
+      "versions": [
+        {
+          "version": "0.2.0",
+          "buildVersion": "1",
+          "date": "2026-10-20",
+          "localizedDescription": "Unsigned build. Not yet tested on a device.",
+          "downloadURL": "https://github.com/jesaias1/IW4LJ/releases/download/ios-v0.2.0/IW4LJ.ipa",
+          "size": 39146939,
+          "minOSVersion": "16.0"
+        }
+      ],
+      "version": "0.2.0",
+      "versionDate": "2026-10-20",
+      "versionDescription": "Unsigned build. Not yet tested on a device.",
+      "downloadURL": "https://github.com/jesaias1/IW4LJ/releases/download/ios-v0.2.0/IW4LJ.ipa",
+      "size": 39146939,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}

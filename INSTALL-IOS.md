@@ -21,7 +21,38 @@ On a Mac you can instead run `IW4LJ-iOS/ios/scripts/build-ios.sh`.
 
 ## 2. Install it on the phone
 
-The IPA is unsigned; Sideloadly signs it with your Apple ID.
+The IPA is unsigned: an installer app signs it with your own (free) Apple ID. Two ways;
+**SideStore is the easier and more reliable one**, Sideloadly is the fallback.
+
+### Option A (recommended): SideStore
+
+[SideStore](https://sidestore.io) needs a computer **once**, to put itself on the phone.
+After that it runs on the phone and **refreshes your apps in the background**, so you do
+not have to plug in every week. (A free Apple ID still signs for 7 days; SideStore renews
+the signature before then, as long as it keeps working. Open SideStore now and then and
+check the days counter under *My Apps*.)
+
+You need: iOS 15 or newer, Wi-Fi, a free Apple ID, and a PC or Mac for the first install.
+
+1. On the phone, install **LocalDevVPN** from the App Store.
+2. On the computer, install **iloader** (it is listed on
+   [docs.sidestore.io/docs/installation/prerequisites](https://docs.sidestore.io/docs/installation/prerequisites)).
+   On Windows it also needs iTunes or *Apple Devices*.
+3. Connect the phone with a cable and tap **Trust**. In iloader sign in with your Apple ID
+   and choose **Install SideStore**.
+4. On the phone: **Settings → General → VPN & Device Management →** your Apple ID **→
+   Trust**, and turn on **Developer Mode** (*Privacy & Security*) if asked. Restart if asked.
+5. Open **LocalDevVPN** and tap **Connect**, then open **SideStore** and sign in.
+6. Add the IW4LJ source and install: in SideStore go to **Sources → +** and add
+   `https://raw.githubusercontent.com/jesaias1/IW4LJ/main/altstore/source.json`
+   then tap **Get** next to IW4LJ. (Or download `IW4LJ.ipa` and open it with SideStore.)
+
+Free Apple IDs allow **3 apps at a time, including SideStore itself**, and 10 new app IDs a
+week, which is plenty for SideStore plus IW4LJ. The VPN has to be on while SideStore
+installs or refreshes. If SideStore stops refreshing it may need a new "pairing file";
+SideStore's docs explain how.
+
+### Option B: Sideloadly (needs a PC every 7 days)
 
 1. Install **Sideloadly** (sideloadly.io) on Windows, plus iTunes or *Apple
    Devices* so the PC can talk to the phone.
@@ -33,8 +64,9 @@ The IPA is unsigned; Sideloadly signs it with your Apple ID.
    Developer Mode** and restart when asked.
 
 A free Apple ID signature lasts **7 days**: reinstall over the top with Sideloadly
-when the app stops opening. **Do not delete the app** to reinstall — that deletes
-the game files with it. AltStore does the same job and can refresh over Wi-Fi.
+when the app stops opening. AltStore does the same job and can refresh over Wi-Fi.
+
+**Do not delete the app** to reinstall it: that deletes the game files with it.
 
 ## 3. Copy the game
 
