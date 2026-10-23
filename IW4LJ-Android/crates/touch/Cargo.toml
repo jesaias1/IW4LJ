@@ -13,6 +13,7 @@ frame.workspace = true
 net.workspace = true
 render_anim.workspace = true
 render_gpu.workspace = true
+render_scene.workspace = true
 lan = { path = "../lan" }
 
 [lints]

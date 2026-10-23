@@ -56,6 +56,20 @@ impl LodRampArgs {
     }
 }
 
+/// `IW4L_LOD_BIAS` (default 1) scales every static model's distance: above 1 a
+/// model drops to a cheaper level of detail, and is culled, sooner. A phone's GPU
+/// is bound by how many triangles a frame draws, not by its pixels.
+fn lod_bias() -> f32 {
+    static BIAS: std::sync::OnceLock<f32> = std::sync::OnceLock::new();
+    *BIAS.get_or_init(|| {
+        std::env::var("IW4L_LOD_BIAS")
+            .ok()
+            .and_then(|value| value.trim().parse::<f32>().ok())
+            .filter(|bias| *bias > 0.0)
+            .unwrap_or(1.0)
+    })
+}
+
 pub fn smodel_camera_lod(
     lod: Option<asset_model::ModelLodSelector>,
     origin: [f32; 3],
@@ -79,7 +93,7 @@ pub fn smodel_camera_lod(
                 scale,
                 ramp.world_unit,
             );
-            let (mid, last) = ramp.call_dists(d);
+            let (mid, last) = ramp.call_dists(d * lod_bias());
             xmodel_get_lod_for_dist(lod_start, num_lods, lod_dist, mid, last)
         }
 

@@ -688,7 +688,9 @@ fn step_authority(
     trace: Option<ResMut<AuthorityPhaseTrace>>,
 ) {
     push_phase(trace, "Step");
+    let profile_started = std::time::Instant::now();
     pending_svc.occupy_cs(&mut world.0);
+    let occupy_ns = profile_started.elapsed().as_nanos() as u64;
     let Some(input) = pending.0.take() else {
         return;
     };
@@ -700,6 +702,26 @@ fn step_authority(
         crate::AUTHORITY_MS,
         sim::StepReason::AuthorityFrame,
     );
+    // `IW4L_STEP_PROFILE=1`: what the step's wrapper costs besides the step.
+    {
+        use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
+        static OCCUPY: AtomicU64 = AtomicU64::new(0);
+        static WHOLE: AtomicU64 = AtomicU64::new(0);
+        static COUNT: AtomicU64 = AtomicU64::new(0);
+        static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        if *ON.get_or_init(|| std::env::var_os("IW4L_STEP_PROFILE").is_some()) {
+            OCCUPY.fetch_add(occupy_ns, Relaxed);
+            WHOLE.fetch_add(profile_started.elapsed().as_nanos() as u64, Relaxed);
+            if COUNT.fetch_add(1, Relaxed) % 300 == 299 {
+                diag::info!(
+                    Sim,
+                    "step_authority (ms per step): whole={:.2} occupy_cs={:.2}",
+                    WHOLE.swap(0, Relaxed) as f64 / 300.0 / 1e6,
+                    OCCUPY.swap(0, Relaxed) as f64 / 300.0 / 1e6
+                );
+            }
+        }
+    }
     // A terminal script error drops the match to the lobby;
     // the world stays frozen until the swap replaces it.
     let Ok(result) = stepped else {

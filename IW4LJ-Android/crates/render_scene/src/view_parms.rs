@@ -240,6 +240,32 @@ pub fn lens_world_from_parent_child(parent: Transform, child: Transform) -> Mat4
     parent.to_matrix() * child.to_matrix()
 }
 
+/// The draw-distance limit: 0 is none, `u32::MAX` is "not read yet" (the first
+/// use reads `IW4L_FAR`). The mod menu's DRAW buttons set it while playing.
+static FAR_LIMIT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(u32::MAX);
+
+/// Draw nothing farther than `limit` world units (`None`: no limit).
+pub fn set_far_limit(limit: Option<f32>) {
+    FAR_LIMIT.store(
+        limit.filter(|far| *far > 0.0).map_or(0, f32::to_bits),
+        std::sync::atomic::Ordering::Relaxed,
+    );
+}
+
+fn far_limit() -> Option<f32> {
+    use std::sync::atomic::Ordering;
+    let mut bits = FAR_LIMIT.load(Ordering::Relaxed);
+    if bits == u32::MAX {
+        bits = std::env::var("IW4L_FAR")
+            .ok()
+            .and_then(|value| value.trim().parse::<f32>().ok())
+            .filter(|far| *far > 0.0)
+            .map_or(0, f32::to_bits);
+        FAR_LIMIT.store(bits, Ordering::Relaxed);
+    }
+    (bits != 0).then(|| f32::from_bits(bits))
+}
+
 #[must_use]
 pub fn prepare_scene_view(
     world_from_local: Mat4,
@@ -260,6 +286,10 @@ pub fn prepare_scene_view(
     let forward = world_from_local.transform_vector3(Vec3::NEG_Z);
     let right = world_from_local.transform_vector3(Vec3::X);
     let up = world_from_local.transform_vector3(Vec3::Y);
+    // `IW4L_FAR` (world units): nothing farther than this is drawn. A phone's GPU
+    // is bound by how much of the map is in view, and a long hall can put most of
+    // a level on screen. The projection is unchanged; only what is culled.
+    let cull_far = far_limit().map_or(far, |limit| far.min(limit));
     let mut frustum_planes = perspective_frustum_planes(FrustumSpec {
         eye,
         forward,
@@ -268,7 +298,7 @@ pub fn prepare_scene_view(
         fov_y_rad: fov,
         aspect,
         near,
-        far,
+        far: cull_far,
     })
     .to_vec();
     if no_frustum_env() {

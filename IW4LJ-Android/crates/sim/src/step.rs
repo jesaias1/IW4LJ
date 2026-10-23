@@ -35,29 +35,92 @@ pub(crate) struct StepRequest {
     output: Option<TickResult>,
 }
 
+const STEP_STAGES: [&str; 18] = [
+    "advance_time",
+    "expire_events",
+    "apply_disconnects",
+    "advance_mechanics",
+    "advance_scheduler",
+    "script_signals",
+    "apply_actions",
+    "sync_players",
+    "sync_presence",
+    "run_players",
+    "projectile_launches",
+    "collision_state",
+    "run_entity_types",
+    "dispatch_touches",
+    "sync_engine_events",
+    "finalize",
+    "local_dvars",
+    "publish_snapshot",
+];
+
+/// Time spent in each stage of the step, for `IW4L_STEP_PROFILE=1`.
+static STEP_NS: [std::sync::atomic::AtomicU64; 18] =
+    [const { std::sync::atomic::AtomicU64::new(0) }; 18];
+static STEP_TOTAL_NS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static STEP_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn timed(index: usize, system: fn(&mut World)) -> impl FnMut(&mut World) {
+    move |world: &mut World| {
+        let started = std::time::Instant::now();
+        system(world);
+        STEP_NS[index].fetch_add(
+            started.elapsed().as_nanos() as u64,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+    }
+}
+
+/// Every 300 steps, say where the step's time went (when asked for).
+fn report_step_profile() {
+    use std::sync::atomic::Ordering::Relaxed;
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if !*ON.get_or_init(|| std::env::var_os("IW4L_STEP_PROFILE").is_some()) {
+        return;
+    }
+    let steps = STEP_COUNT.fetch_add(1, Relaxed) + 1;
+    if steps % 300 != 0 {
+        return;
+    }
+    let total = STEP_TOTAL_NS.swap(0, Relaxed) as f64 / 300.0 / 1e6;
+    let mut line = format!("step profile ({steps} steps, ms per step): run_schedule={total:.2}");
+    for (name, ns) in STEP_STAGES.iter().zip(&STEP_NS) {
+        let ms = ns.swap(0, Relaxed) as f64 / 300.0 / 1e6;
+        if ms >= 0.02 {
+            line.push_str(&format!(" {name}={ms:.2}"));
+        }
+    }
+    diag::info!(Sim, "{line}");
+}
+
 pub(crate) fn schedule() -> Schedule {
     let mut schedule = Schedule::default();
     schedule.add_systems(
         (
-            advance_time_system,
-            expire_transient_events_system,
-            crate::script::apply_disconnects,
-            crate::script::advance_mechanics,
-            crate::script::advance_scheduler,
+            timed(0, advance_time_system),
+            timed(1, expire_transient_events_system),
+            timed(2, crate::script::apply_disconnects),
+            timed(3, crate::script::advance_mechanics),
+            timed(4, crate::script::advance_scheduler),
             (
-                apply_script_signals_system,
-                apply_actions_system,
-                crate::script::sync_players,
-                crate::script::sync_presence,
-                run_players_system,
-                crate::script::publish_projectile_launches,
-                record_collision_state_system,
-                run_entity_types_system,
-                dispatch_touches_system,
-                crate::script::sync_engine_events,
-                finalize_system,
-                crate::script::host::natives::iw4::deliver_local_presentation_dvars,
-                publish_snapshot_system,
+                timed(5, apply_script_signals_system),
+                timed(6, apply_actions_system),
+                timed(7, crate::script::sync_players),
+                timed(8, crate::script::sync_presence),
+                timed(9, run_players_system),
+                timed(10, crate::script::publish_projectile_launches),
+                timed(11, record_collision_state_system),
+                timed(12, run_entity_types_system),
+                timed(13, dispatch_touches_system),
+                timed(14, crate::script::sync_engine_events),
+                timed(15, finalize_system),
+                timed(
+                    16,
+                    crate::script::host::natives::iw4::deliver_local_presentation_dvars,
+                ),
+                timed(17, publish_snapshot_system),
             )
                 .chain()
                 .run_if(crate::script::healthy),
@@ -75,6 +138,7 @@ pub(crate) fn run_schedule(
     msec: i32,
     reason: crate::StepReason,
 ) -> Result<TickResult, crate::script::Fault> {
+    let profile_started = std::time::Instant::now();
     crate::script::preflight(ecs, tick, reason)?;
     assert!(
         !ecs.contains_resource::<StepRequest>(),
@@ -90,6 +154,11 @@ pub(crate) fn run_schedule(
         output: None,
     });
     schedule.run(ecs);
+    STEP_TOTAL_NS.fetch_add(
+        profile_started.elapsed().as_nanos() as u64,
+        std::sync::atomic::Ordering::Relaxed,
+    );
+    report_step_profile();
     let request = ecs
         .remove_resource::<StepRequest>()
         .expect("simulation request missing");

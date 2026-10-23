@@ -28,6 +28,8 @@ pub(crate) enum Setting {
     ShowFps,
     /// The frame rate to hold: 30, 60, 90 or 120.
     FpsCap,
+    /// How far the world is drawn, in world units (0: as far as the map goes).
+    DrawDistance,
     /// Whether frames wait for the display (1, the default) or are shown as soon
     /// as they are ready (0). Read when the game starts.
     Vsync,
@@ -44,6 +46,7 @@ impl Setting {
             Self::ShowFps => "show_fps.txt",
             Self::FpsCap => "fps_cap.txt",
             Self::Vsync => "sync_mode.txt",
+            Self::DrawDistance => "draw_distance.txt",
             Self::Skin => "skin.txt",
         }
     }
@@ -385,7 +388,7 @@ const TABS: [Tab; 8] = [
     },
     Tab {
         name: "GRAPHICS",
-        hint: "Performance holds the frame rate and keeps the phone cool. The game is held to 60 fps so it stays cool in a long session; FPS 30 gives an even 30 on a slow phone; FPS 90 and FPS 120 are for phones that can sustain more. SYNC OFF shows frames as soon as they are ready: faster on a slow phone, but uneven; it applies at the next start. Render and texture settings apply the next time the game starts.",
+        hint: "Performance holds the frame rate and keeps the phone cool. The game is held to 60 fps so it stays cool in a long session; FPS 30 gives an even 30 on a slow phone; FPS 90 and FPS 120 are for phones that can sustain more. DRAW 3000, 2000 and 1200 stop drawing the map beyond that distance (units): the biggest speed-up on a slow phone in a long map. SYNC OFF shows frames as soon as they are ready: faster on a slow phone, but uneven; it applies at the next start. Render and texture settings apply the next time the game starts.",
         items: &[
             set("PERFORMANCE", Setting::Preset, 2),
             set("BALANCED", Setting::Preset, 1),
@@ -397,6 +400,10 @@ const TABS: [Tab; 8] = [
             set("FPS 90", Setting::FpsCap, 90),
             set("FPS 120", Setting::FpsCap, 120),
             set("FPS UNCAPPED", Setting::FpsCap, 0),
+            set("DRAW FULL", Setting::DrawDistance, 0),
+            set("DRAW 3000", Setting::DrawDistance, 3000),
+            set("DRAW 2000", Setting::DrawDistance, 2000),
+            set("DRAW 1200", Setting::DrawDistance, 1200),
             set("SYNC ON", Setting::Vsync, 1),
             set("SYNC OFF", Setting::Vsync, 0),
             set("RENDER AUTO", Setting::RenderHeight, -1),
@@ -445,6 +452,7 @@ pub(crate) struct ModMenu {
     show_fps: bool,
     fps_cap: i32,
     vsync: i32,
+    draw_distance: i32,
     fps: Option<Entity>,
     /// The control a controller has selected, as an index into the open tab.
     focus: usize,
@@ -633,6 +641,10 @@ pub(crate) fn spawn(mut commands: Commands, mut menu: ResMut<ModMenu>) {
     };
     crate::frame_cap::set_cap(menu.fps_cap as u32);
     menu.vsync = if read_setting(Setting::Vsync) == 0 { 0 } else { 1 };
+    menu.draw_distance = read_setting(Setting::DrawDistance).max(0);
+    if menu.draw_distance > 0 {
+        render_scene::set_far_limit(Some(menu.draw_distance as f32));
+    }
 
     // The frame-rate readout: small, under the button row, out of the way.
     let fps = commands
@@ -957,6 +969,10 @@ fn run(menu: &mut ModMenu, target: Target, queue: &mut ConsoleQueue, now: f32) {
                     }
                     Setting::ShowFps => menu.show_fps = value == 1,
                     Setting::Vsync => menu.vsync = value,
+                    Setting::DrawDistance => {
+                        menu.draw_distance = value;
+                        render_scene::set_far_limit((value > 0).then_some(value as f32));
+                    }
                     Setting::FpsCap => {
                         menu.fps_cap = value;
                         crate::frame_cap::set_cap(value as u32);
@@ -1255,6 +1271,7 @@ pub(crate) fn update(
                 Act::Set(Setting::ShowFps, value) => (value == 1) == menu.show_fps,
                 Act::Set(Setting::FpsCap, value) => value == menu.fps_cap,
                 Act::Set(Setting::Vsync, value) => value == menu.vsync,
+                Act::Set(Setting::DrawDistance, value) => value == menu.draw_distance,
             },
         };
         let focused = menu.pad_used
