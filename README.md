@@ -77,8 +77,13 @@ this.
 
 - The game is held to **60 fps** by default to keep the phone cool over long sessions.
   Strong phones can pick **FPS 90** or **FPS 120** in the mod menu's **GRAPHICS** tab.
+- **DRAW 3000 / 2000 / 1200** in **GRAPHICS** stop drawing the map beyond that distance. In a long
+  map (Terminal) it is the biggest speed-up on a slow phone: on a Galaxy S23, 1200 took the frame
+  rate from about 30 to 44 fps. **FPS 30** gives an even 30 on a slow phone.
 - **Render resolution** and **texture quality** are also in **GRAPHICS** and apply at the
   next launch. Lower them on phones that struggle.
+- The first time you load a map the phone compiles its graphics shaders, which can take minutes on
+  a slower GPU. They are saved, so every launch after that loads in under a minute.
 - 6 GB of RAM or more is recommended. Long sessions on some phones dip below 60 fps.
 
 ## Quick start

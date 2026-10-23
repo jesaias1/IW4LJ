@@ -7020,6 +7020,7 @@ dependencies = [
  "net",
  "render_anim",
  "render_gpu",
+ "render_scene",
 ]
 
 [[package]]
