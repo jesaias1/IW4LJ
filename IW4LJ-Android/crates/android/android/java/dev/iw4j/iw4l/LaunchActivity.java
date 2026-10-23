@@ -76,6 +76,10 @@ public class LaunchActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getIntent() != null && getIntent().getBooleanExtra("iw4l_dev", false)) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
         removeTestLeftovers();
         boolean crashed = readFile(new File(getFilesDir(), STATE_FILE)).equals("starting");
         if (!crashed) {
@@ -88,7 +92,12 @@ public class LaunchActivity extends Activity {
     private void startGame() {
         writeState(this, "starting");
         new File(getFilesDir(), CRASH_FILE).delete();
-        startActivity(new Intent(this, GameActivity.class));
+        Intent game = new Intent(this, GameActivity.class);
+        // A development launch (`--ez iw4l_dev true`) carries on to the game.
+        if (getIntent() != null && getIntent().getExtras() != null) {
+            game.putExtras(getIntent().getExtras());
+        }
+        startActivity(game);
         finish();
     }
 
