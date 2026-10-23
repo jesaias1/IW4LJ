@@ -83,6 +83,14 @@ fn main() {
     unsafe {
         std::env::set_var("IW4L_GAMES", &games);
         std::env::set_var("IW4L_ARTIFACTS_DIR", &artifacts);
+        // `sync_mode.txt` = 0 (the mod menu's SYNC OFF): show frames as soon as they
+        // are ready instead of waiting for the display. A 60 Hz phone that can only
+        // draw 40 frames a second is held to 30 by the wait.
+        if std::env::var_os("IW4L_PRESENT_MODE").is_none()
+            && std::fs::read_to_string(files.join("sync_mode.txt")).is_ok_and(|text| text.trim() == "0")
+        {
+            std::env::set_var("IW4L_PRESENT_MODE", "AutoNoVsync");
+        }
         // The driver's compiled pipelines, kept between launches: a phone GPU
         // spends minutes on them otherwise. `IW4L_PIPELINE_CACHE=` (empty) turns
         // it off.
@@ -161,6 +169,10 @@ fn main() {
             }
         }
     }
+
+    // `IW4L_BENCH=1` (in `env.txt`) prints a per-stage frame-time report when the
+    // game quits; the desktop entry arms it the same way.
+    bootstrap::bench::arm();
 
     // The desktop entry does this before launching. The selected community
     // descriptor is what makes a master reachable, so the Android entry must

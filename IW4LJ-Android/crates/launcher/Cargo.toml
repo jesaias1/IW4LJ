@@ -13,6 +13,10 @@ path = "src/main.rs"
 bevy-debug = ["bootstrap/bevy-debug"]
 bevy-trace = ["bootstrap/bevy-trace"]
 
+[build-dependencies]
+# The Windows icon, embedded into the executable (see build.rs).
+embed-resource = "3"
+
 [dependencies]
 updater = { path = "../updater" }
 diag.workspace = true

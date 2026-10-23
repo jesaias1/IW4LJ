@@ -14,15 +14,15 @@ of **Modern Warfare 2 multiplayer** (the Steam version works).
 Get **`IW4LJ-PC.zip`** from the release:
 **https://github.com/jesaias1/IW4LJ/releases/tag/pc-v0.1.0**
 
-Extract it into an empty folder you can write to (not *Program Files*). It contains `iw4l.exe`.
+Extract it into an empty folder you can write to (not *Program Files*). It contains `IW4LJ.exe`.
 
 ## 2. Start it
 
-1. Run `iw4l.exe`. It looks for Modern Warfare 2 in your Steam libraries and makes a
+1. Run `IW4LJ.exe`. It looks for Modern Warfare 2 in your Steam libraries and makes a
    `Modern Warfare 2.lnk` shortcut next to itself.
-2. If it can't find the game (a non-Steam install, for example), make that shortcut yourself:
-   right-click inside the folder, *New, Shortcut*, and paste the path of your MW2 folder (the one
-   that holds `zone` and `main`).
+2. If it can't find the game (a non-Steam install, for example, or an IW4x folder), make that shortcut
+   yourself: right-click inside the folder, *New, Shortcut*, paste the path of your MW2 folder (the one
+   that holds `zone` and `main`) and name it **Modern Warfare 2**.
 3. Caches, saves and logs go in an `iw4l-artifacts` folder beside the exe.
 
 ## 3. The mod menu
