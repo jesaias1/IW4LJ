@@ -298,6 +298,8 @@ fn build_pipeline(
         depth_stencil: Some(plan.depth_stencil.clone()),
         multisample: plan.multisample,
         multiview_mask: None,
-        cache: None,
+        // The driver's compiled pipelines, kept on disk between launches (see
+        // the vendored bevy_render): a map's pipelines take minutes on a phone.
+        cache: bevy::render::render_resource::disk_pipeline_cache(),
     })
 }

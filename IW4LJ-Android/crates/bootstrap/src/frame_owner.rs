@@ -5,7 +5,7 @@ pub fn prefer_performance_cores() -> Option<PerformanceCorePlan> {
     let performance = match std::fs::read_to_string("/sys/devices/cpu_core/cpus") {
         Ok(list) => list,
         Err(_) if cfg!(target_os = "android") && !pinning_disabled() => {
-            big_cores(&allowed)?
+            pinning_override().or_else(|| big_cores(&allowed))?
         }
         Err(_) => return None,
     };
@@ -47,12 +47,25 @@ fn big_cores_by_part(allowed: &[usize]) -> Option<String> {
         })
         .map(usize::to_string)
         .collect();
-    (big.len() >= 3 && big.len() < allowed.len()).then(|| big.join(","))
+    (big.len() >= MIN_BIG_CORES && big.len() < allowed.len()).then(|| big.join(","))
 }
 
-/// `IW4L_PIN_CORES=0` leaves thread placement to the system.
+/// A phone with fewer big cores than this is left to the system. Measured on a
+/// Galaxy A53 (two fast cores, six slow): pinning the process to its two fast
+/// cores made loading several times slower than leaving the scheduler alone,
+/// since every worker thread then shared two cores.
+const MIN_BIG_CORES: usize = 3;
+
+/// `IW4L_PIN_CORES=0` leaves thread placement to the system; `IW4L_PIN_CORES=6,7`
+/// (or `4-7`) names the cores to use, for trying a layout on a device.
 fn pinning_disabled() -> bool {
     std::env::var("IW4L_PIN_CORES").is_ok_and(|value| value.trim() == "0")
+}
+
+fn pinning_override() -> Option<String> {
+    let value = std::env::var("IW4L_PIN_CORES").ok()?;
+    let value = value.trim();
+    (value != "0" && !parse_cpu_list(value).is_empty()).then(|| value.to_owned())
 }
 
 /// The cores of a phone that are not its efficiency cores, as a cpu list.
@@ -101,7 +114,7 @@ fn big_cores(allowed: &[usize]) -> Option<String> {
         .filter(|(_, rating)| rating * 100 >= top * floor_percent)
         .map(|(cpu, _)| cpu.to_string())
         .collect();
-    (big.len() >= 3).then(|| big.join(","))
+    (big.len() >= MIN_BIG_CORES).then(|| big.join(","))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

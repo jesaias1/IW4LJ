@@ -2,6 +2,9 @@
 # relay backpressure. Pin the upstream 0.11.x fix for both clients and master.
 # Remove when a crates.io release includes quinn-rs/quinn#2806.
 [patch.crates-io]
+# A Vulkan pipeline cache kept on disk (vendor/bevy_render/src/render_resource/
+# disk_pipeline_cache.rs): a phone GPU spends minutes compiling a map's pipelines.
+bevy_render = { path = "vendor/bevy_render" }
 quinn-proto = { git = "https://github.com/quinn-rs/quinn", rev = "f650e0f213b01ea7bebd60023e5df7df65e5c2bd" }
 
 [workspace]

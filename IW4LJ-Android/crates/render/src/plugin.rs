@@ -6,6 +6,20 @@ use crate::diag::capture::{CaptureQueue, capture_frame, report_unwritten_capture
 use crate::diag::frame_spans::register_frame_spans;
 use crate::diag::render_frame_diag::{register_render_frame_diag, sample_render_frame_diag};
 
+/// Write the driver's pipeline cache to disk every twenty seconds while it grows,
+/// so a launch that is cut short (or killed for memory) still keeps what it
+/// compiled.
+fn save_pipeline_cache(time: Res<Time<Real>>, mut next: Local<f32>) {
+    let now = time.elapsed_secs();
+    if now < *next {
+        return;
+    }
+    *next = now + 20.0;
+    if let Some(bytes) = bevy::render::render_resource::save_disk_pipeline_cache() {
+        diag::info!(World, "pipeline cache: saved {bytes} bytes");
+    }
+}
+
 pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
@@ -40,6 +54,10 @@ impl Plugin for RenderPlugin {
         crate::diag::acceptance::register_acceptance_systems(app);
         register_render_frame_diag(app);
         app.add_systems(Update, sample_render_frame_diag.in_set(ClientSet::Diag));
+        // A saved pipeline cache makes the next launch's map load fast.
+        if bevy::render::render_resource::disk_pipeline_cache_path().is_some() {
+            app.add_systems(Update, save_pipeline_cache);
+        }
         register_frame_spans(app);
         app.init_resource::<CaptureQueue>().add_systems(
             Update,

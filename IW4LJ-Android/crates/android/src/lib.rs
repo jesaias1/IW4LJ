@@ -83,6 +83,12 @@ fn main() {
     unsafe {
         std::env::set_var("IW4L_GAMES", &games);
         std::env::set_var("IW4L_ARTIFACTS_DIR", &artifacts);
+        // The driver's compiled pipelines, kept between launches: a phone GPU
+        // spends minutes on them otherwise. `IW4L_PIPELINE_CACHE=` (empty) turns
+        // it off.
+        if std::env::var_os("IW4L_PIPELINE_CACHE").is_none() {
+            std::env::set_var("IW4L_PIPELINE_CACHE", files.join("pipeline_cache.bin"));
+        }
         // The settings and local profile are found through `HOME` or
         // `XDG_CONFIG_HOME`; without one they are session-only and the unlocked
         // progression would not survive a restart.
